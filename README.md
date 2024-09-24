@@ -1,6 +1,6 @@
 # 2024-25_GP_28
 
-## Introduction
+## InsulinSync
 
 Managing insulin dosages for individuals with Type 1 diabetes is a complex and high-stakes task due ‎to the constant need to adjust for daily fluctuations in diet, exercise, and blood glucose levels. With ‎the pancreas unable to produce insulin, external insulin administration becomes essential for ‎survival. However, maintaining healthy blood sugar levels is challenging, as they are influenced by ‎dynamic factors such as carbohydrate intake, physical activity, stress, illness, and sleep. This ‎variability makes precise insulin dosing difficult.‎
 
