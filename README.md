@@ -30,8 +30,20 @@ following key features:
 The solution will help improve diabetes management by simplifying the process of calculating the right amount of insulin dosage and reducing the risk of human calculation errors leading to better health status.
 
 ## Technology  
-Dart 
-Python
+- ![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white) **Flutter**: An open-source framework to build an application’s user interface (UI) for cross-platform applications.
+- ![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white) **Dart**: An object-oriented programming language for cross-platform applications.
+
+
+- ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white) **Node.js**: JavaScript runtime environment that handles server-side operations.
+- ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white) **Python**: Employed for deep learning models and data processing tasks.
+
+
+- ![Java](https://img.shields.io/badge/Java-ED8B00?logo=java&logoColor=white) **Java**: Used for native Android integrations and platform-specific functionalities.
+
+
+- ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black) **Firebase**: A set of cloud-based development tools that helps developers build and manage their apps easily.
+  - ![Firestore](https://img.shields.io/badge/Firestore-FF6F00?logo=firebase&logoColor=white) **Cloud Firestore**: A cloud-based NoSQL document database that is part of the Firebase platform.
+  - ![Firebase Authentication](https://img.shields.io/badge/Firebase_Auth-FF6F00?logo=firebase&logoColor=white) **Firebase Authentication**: A service that simplifies the process of authenticating users with multiple authentication methods and is part of the Firebase platform.
 
 ## Launching instructions
 In this stage of development, there are no launching instructions yet.
