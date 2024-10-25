@@ -45,9 +45,10 @@ The solution will help improve diabetes management by simplifying the process of
   - ![Firestore](https://img.shields.io/badge/Firestore-FF6F00?logo=firebase&logoColor=white) **Cloud Firestore**: A cloud-based NoSQL document database that is part of the Firebase platform.
   - ![Firebase Authentication](https://img.shields.io/badge/Firebase_Auth-FF6F00?logo=firebase&logoColor=white) **Firebase Authentication**: A service that simplifies the process of authenticating users with multiple authentication methods and is part of the Firebase platform.
 
-## 🚀 Launching the Android Flutter App
 
-## Prerequisites
+## 🚀 Launching InsulinSync App
+
+### Prerequisites
 
 Before launching the Android version of this Flutter app, ensure you have the following set up on your system:
 
@@ -60,136 +61,88 @@ You can verify Flutter installation with the following command:
 
 ```bash
 flutter doctor
+```
+
 Ensure there are no issues with Android toolchain, Flutter, or device connection.
 
-Steps to Launch the App
-1. Clone the Repository
+---
+
+### Steps to Launch the App
+#### 1. Clone the Repository
 First, clone the repository to your local machine:
+```bash
+git clone https://github.com/wareefAlyousef/2024-25_GP_3.git
+cd wareefAlyousef/2024-25_GP_3
+```
 
-bash
-نسخ الكود
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
-2. Install Dependencies
+#### 2. Install Dependencies
 Run the following command to install all the required dependencies for the project:
-
-bash
-نسخ الكود
+```bash
 flutter pub get
-3. Set Up an Android Emulator (Optional)
+```
+#### 3. Set Up an Android Emulator (Optional)
 If you want to test on an emulator, follow these steps:
+-Open Android Studio
+-Go to AVD Manager (Click the device icon in the top toolbar)
+-Create a new virtual device (if none exists)
+-Choose a device (e.g., Pixel) and the desired API level (min API should match your `minSdkVersion` in `android/app/build.gradle`)
+-Start the emulator
 
-Open Android Studio
-Go to AVD Manager (Click on the device icon in the top toolbar)
-Create a new virtual device if you don't have one
-Choose a device (e.g., Pixel), then select the desired API level (minimum should match your minSdkVersion in android/app/build.gradle)
-Start the emulator
-4. Connect Your Android Device
+#### 4. Connect Your Android Device
 If you are testing on a physical device:
 
-Enable Developer Mode and USB Debugging on your Android device.
-Connect the device via USB.
-Ensure the device is listed by running:
-bash
-نسخ الكود
+- Enable Developer Mode and USB Debugging on your Android device.
+- Connect the device via USB.
+- Ensure the device is listed by running:
+```bash
 flutter devices
-5. Configure Build Settings (Optional)
+```
+
+#### 5. Configure Build Settings (Optional)
 If you need to adjust build settings like minSdkVersion or app permissions:
 
-Navigate to android/app/build.gradle for SDK configurations.
-Adjust minSdkVersion or targetSdkVersion if necessary.
-Example:
+- Navigate to `android/app/build.gradle` for SDK configurations.
+- Adjust `minSdkVersion` or `targetSdkVersion` if necessary.
 
-groovy
-نسخ الكود
-defaultConfig {
-    applicationId "com.example.your_app"
-    minSdkVersion 21
-    targetSdkVersion 33
-    versionCode 1
-    versionName "1.0"
-}
-6. Run the App
-To run the app on your connected device or emulator, use the following command:
+#### 6. Build the APK (Optional)
+To build the APK file, which you can manually install on a device or distribute, use the following command:
+```bash
+flutter build apk
+```
 
-bash
-نسخ الكود
-flutter run
-7. Build a Release APK (Optional for Distribution)
-If you want to build a release APK for distribution:
+This command will generate an APK file in the `build/app/outputs/flutter-apk/` directory. You can install it manually on your device or share it with others for testing.
 
-Generate a Key (if not already done):
-bash
-نسخ الكود
-keytool -genkey -v -keystore ~/your-keystore-path.jks -keyalg RSA -keysize 2048 -validity 10000 -alias your-key-alias
-Follow the prompts and store the keystore in a safe location.
-
-Reference the Keystore in the App:
-Open android/app/build.gradle.
-Add the keystore information to the signingConfigs block:
-groovy
-نسخ الكود
-android {
-    signingConfigs {
-        release {
-            keyAlias 'your-key-alias'
-            keyPassword 'your-key-password'
-            storeFile file('your-keystore-path.jks')
-            storePassword 'your-keystore-password'
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
-    }
-}
-Build the Release APK:
-Run the following command to create the APK:
-
-bash
-نسخ الكود
+Alternatively, to generate a release version of the APK (optimized for distribution):
+```bash
 flutter build apk --release
-The APK file will be located at:
+```
 
-arduino
-نسخ الكود
-build/app/outputs/flutter-apk/app-release.apk
-8. Generate an App Bundle (AAB) for Play Store (Optional)
-To generate an Android App Bundle for uploading to the Play Store:
+#### 7. Run the App
+To run the app on your connected Android device or emulator, use the following command:
+```bash
+flutter run
+```
+Flutter will detect connected devices and deploy the app to the selected one. If multiple devices are connected, it will prompt you to choose one.
 
-bash
-نسخ الكود
-flutter build appbundle --release
-This will generate an .aab file located at:
+---
+### Troubleshooting
+- Device not detected: Make sure USB Debugging is enabled and the correct drivers for your device are installed. You can verify device connection by running:
+  ```bash
+  flutter doctor
+  ```
+- Build errors: Check the terminal output for any error messages. Common issues involve missing dependencies or SDK mismatches. Try running:
+  ```bash
+  flutter clean
+  ```
+  Then rebuild the app.
 
-arduino
-نسخ الكود
-build/app/outputs/bundle/release/app-release.aab
-Troubleshooting
-Common Issues
-No Connected Devices Found
-Ensure your Android device/emulator is properly connected:
+With these steps, you should be able to successfully launch and test the Android version of your Flutter app.
 
-bash
-نسخ الكود
-flutter devices
-Gradle Build Errors
-If you encounter issues with the Gradle build, try running:
+---
 
-bash
-نسخ الكود
-flutter clean
-flutter pub get
-Outdated Dependencies
-If there are issues with outdated packages, you can update dependencies by running:
+### Additional Resources:
+- [Flutter Documentation](https://flutter.dev/docs)
+- [Android Studio Setup Guide](https://developer.android.com/studio/install)
+- [Troubleshooting Guide for Flutter](https://docs.flutter.dev/get-started/troubleshoot)
 
-bash
-نسخ الكود
-flutter pub upgrade
-Additional Resources
-Flutter Documentation
-Android Studio Setup
-Publishing to Google Play Store
-By following these steps, you should be able to successfully launch the Android version of your Flutter app. Feel free to open an issue if you encounter any problems.tor
-
+Feel free to reach out for help or report issues through the [issues page](https://github.com/wareefAlyousef/2024-25_GP_3/issues).
