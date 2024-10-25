@@ -1,7 +1,12 @@
-Waref Alyousef	<442200377@student.ksu.edu.sa>
+# Prepared by:
 
-Reem Alhawass	<443200461@student.ksu.edu.sa>
+- Waref Alyousef	<442200377@student.ksu.edu.sa>
 
-Raneem Alyahya	<443200702@student.ksu.edu.sa>
+- Reem Alhawass	<443200461@student.ksu.edu.sa>
 
-Hind Alhijailan	<443200971@student.ksu.edu.sa>
+- Raneem Alyahya	<443200702@student.ksu.edu.sa>
+
+- Hind Alhijailan	<443200971@student.ksu.edu.sa>
+
+# Supervised by:
+- Dr. Khulood Alyahya <kalyahya1@ksu.edu.sa>
