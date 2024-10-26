@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">InsulinSync</string>
+
+    <!-- Define health permissions -->
+    <array name="health_permissions">
+        <item>android.permission.health.READ_SLEEP</item>
+        <item>android.permission.health.WRITE_SLEEP</item>
+        <item>android.permission.health.READ_SPEED</item>
+        <item>android.permission.health.WRITE_SPEED</item>
+        <item>android.permission.health.READ_STEPS</item>
+        <item>android.permission.health.WRITE_STEPS</item>
+        <item>android.permission.health.READ_EXERCISE</item>
+        <item>android.permission.health.WRITE_EXERCISE</item>
+        <item>android.permission.health.READ_TOTAL_CALORIES_BURNED</item>
+        <item>android.permission.health.WRITE_TOTAL_CALORIES_BURNED</item>
+        <item>android.permission.health.READ_HEART_RATE</item>
+        <item>android.permission.health.WRITE_HEART_RATE</item>
+        <item>androidx.health.permission.StepsCadence.READ</item>
+        <item>androidx.health.permission.StepsCadence.WRITE</item>
+    </array>
+</resources>
