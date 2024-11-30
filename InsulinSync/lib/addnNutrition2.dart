@@ -101,7 +101,7 @@ class _AddNutrition2 extends State<AddNutrition2> {
                     radius: 80,
                     backgroundColor: Color.fromARGB(200, 210, 227, 255),
                     child: Icon(
-                      Icons.note,
+                      Icons.fastfood,
                       size: 80,
                       color: Color(0xFF023B96),
                     ),

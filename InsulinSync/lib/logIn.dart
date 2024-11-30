@@ -582,7 +582,7 @@ class _logIn extends State<logIn> {
       context: context,
       barrierDismissible: false, 
       builder: (BuildContext context) {
-        Future.delayed(Duration(seconds: 4), () {
+        Future.delayed(Duration(seconds: 10), () {
           Navigator.of(context).pop(); 
           Navigator.pushAndRemoveUntil(
                       context,

@@ -985,7 +985,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               _buildInputField(
                 context,
                 title: 'What is your ',
-                highlightedText: 'Correction ',
+                highlightedText: 'Sensitivity ',
                 description: 'factor?',
                 controller: _correctionFactorController,
                 errorText: _correctionFactorError,
@@ -1427,7 +1427,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       context: context,
       barrierDismissible: false, 
       builder: (BuildContext context) {
-        Future.delayed(Duration(seconds: 4), () {
+        Future.delayed(Duration(seconds: 10), () {
           Navigator.of(context).pop(); 
           Navigator.pushAndRemoveUntil(
                       context,
