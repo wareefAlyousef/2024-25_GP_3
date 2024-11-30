@@ -14,10 +14,17 @@ import 'home_screen.dart';
 import 'signUp.dart';
 import 'services/auth_service.dart';
 import 'splash.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseFirestore.instance.settings =
+      const Settings(persistenceEnabled: true);
+
+  FirebaseDatabase.instance.setPersistenceEnabled(true);
+
   runApp(
     MultiProvider(
       providers: [

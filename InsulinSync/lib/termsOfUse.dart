@@ -103,9 +103,11 @@ class _TermsOfUsePageState extends State<TermsOfUsePage> {
               child: Text(
                 'Accept and Continue',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      letterSpacing: 0.0,
-                      color: Colors.white,
-                    ),
+                  fontSize: 19.0,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

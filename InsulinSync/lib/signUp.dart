@@ -65,8 +65,8 @@ class _MainFormState extends State<MainForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         resizeToAvoidBottomInset: true,
         body: Padding(
           padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
@@ -78,6 +78,7 @@ class _MainFormState extends State<MainForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      SizedBox(height: 19.0), 
                       MyBackButton(),
                       Padding(
                         padding: const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
@@ -109,25 +110,25 @@ class _MainFormState extends State<MainForm> {
                           mainAxisSize: MainAxisSize.max,
                           children: [
                             buildTextField(
-                              label: 'First Name',
+                              label: 'First Name *',
                               controller: _firstNameController,
                               validator: firstNameValidator,
                               icon: Icons.person,
                             ),
                             buildTextField(
-                              label: 'Last Name',
+                              label: 'Last Name *',
                               controller: _lastNameController,
                               validator: lastNameValidator,
                               icon: Icons.person_outline,
                             ),
                             buildTextField(
-                              label: 'Email',
+                              label: 'Email *',
                               controller: _emailController,
                               validator: emailValidator,
                               icon: Icons.email,
                             ),
                             buildTextField(
-                              label: 'Password',
+                              label: 'Password *',
                               isObscured: true,
                               controller: _passwordController,
                               validator: passwordValidator,
@@ -145,7 +146,7 @@ class _MainFormState extends State<MainForm> {
 
                     if (formIsValid) {
                       // Now check if the email is already registered using the async validator
-                      bool isRegistered = await authService.isEmailRegistered(_emailController.text);
+                      bool isRegistered = await authService.isEmailRegistered(_emailController.text.trim().toLowerCase());
 
                       if (isRegistered) {
                         // Set error message for email if already registered and trigger UI update
@@ -168,7 +169,7 @@ class _MainFormState extends State<MainForm> {
                             builder: (context) => PersonalInfoPage(
                               firstName: _firstNameController.text,
                               lastName: _lastNameController.text,
-                              email: _emailController.text,
+                              email: _emailController.text.trim().toLowerCase(),
                               password: _passwordController.text,
                             ),
                           ),
@@ -188,12 +189,19 @@ class _MainFormState extends State<MainForm> {
                           color: Color(0xFF666666),
                         ),
                     children: [
-                      const TextSpan(text: 'Already have an account? '),
+                      const TextSpan(
+                          text: 'Already have an account? ',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16.0,
+                          ),
+                        ),
                       TextSpan(
                         text: 'Log in',
                         style: const TextStyle(
                           color: Color(0xFF023B96),
                           fontWeight: FontWeight.w500,
+                          fontSize: 16.0,
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
@@ -225,8 +233,7 @@ class _MainFormState extends State<MainForm> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
   
   // Build text field widget
@@ -247,7 +254,12 @@ class _MainFormState extends State<MainForm> {
         children: [
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
-            child: Text(label),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16, 
+              ),
+            ),
           ),
           CustomTextFormField(
             controller: controller,
@@ -298,7 +310,7 @@ class _MainFormState extends State<MainForm> {
     }
 
     // Check if the email is already registered using the AuthService
-    bool isRegistered = await authService.isEmailRegistered(value);
+    bool isRegistered = await authService.isEmailRegistered(value.trim().toLowerCase());
     if (isRegistered) {
       return 'Email is already registered';
     }
@@ -388,8 +400,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
 
   @override 
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         resizeToAvoidBottomInset: true, 
         body: Padding(
           padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
@@ -401,6 +412,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      SizedBox(height: 19.0), 
                       MyBackButton(),
                       Padding(
                         padding: const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
@@ -420,7 +432,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                           'Please fill out the form below with your personal information.',
                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                 fontWeight: FontWeight.w400,
-                                fontSize: 14,
+                                fontSize: 19,
                                 color: Color(0xFF666666),
                                 letterSpacing: 0.0,
                               ),
@@ -436,10 +448,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                               child: Row(
                                 children: [
                                   Text(
-                                    'Gender',
+                                    'Gender *',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w400,
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       color: Color(0xFF333333),
                                     ),
                                   ),
@@ -459,7 +471,12 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                                       children: [
                                         ChoiceChip(
                                           backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                                          label: Text('Male'),
+                                          label: Text(
+                                            'Male',
+                                            style: TextStyle(
+                                              fontSize: 18, 
+                                            ),
+                                          ),
                                           selected: _isMale == true,
                                           selectedColor: Color(0x4C095AEC),
                                           shape: RoundedRectangleBorder(
@@ -480,7 +497,12 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                                         ),
                                         ChoiceChip(
                                           backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                                          label: Text('Female'),
+                                          label: Text(
+                                            'Female',
+                                            style: TextStyle(
+                                              fontSize: 18, 
+                                            ),
+                                          ),
                                           selected: _isMale == false,
                                           selectedColor: Color(0x4C095AEC),
                                           shape: RoundedRectangleBorder(
@@ -518,13 +540,13 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                               ),
                             ),
                             buildTextField(
-                              label: 'Weight (kg)',
+                              label: 'Weight (kg) *',
                               controller: _weightController,
                               validator: weightValidator,
                               icon: FontAwesomeIcons.weight, 
                             ),
                             buildTextField(
-                              label: 'Height (cm)',
+                              label: 'Height (cm) *',
                               controller: _heightController,
                               validator: heightValidator,
                               icon: Icons.height,
@@ -545,7 +567,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                                         builder: (context) => DiabetesManagementPage(
                                           firstName: widget.firstName,
                                           lastName: widget.lastName,
-                                          email: widget.email,
+                                          email: widget.email.trim().toLowerCase(),
                                           weight: _weightController.text,
                                           height: _heightController.text,
                                           selectedDate: _selectedDate,
@@ -568,12 +590,19 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                                         color: Color(0xFF666666),
                                       ),
                                   children: [
-                                    const TextSpan(text: 'Already have an account? '),
+                                    const TextSpan(
+                                      text: 'Already have an account? ',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16.0,
+                                      ),
+                                    ),
                                     TextSpan(
                                       text: 'Log in',
                                       style: const TextStyle(
                                         color: Color(0xFF023B96),
                                         fontWeight: FontWeight.w500,
+                                        fontSize: 16.0,
                                       ),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
@@ -598,8 +627,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                           ],
                         ),
                       ),
-                    ),
-                  );
+                    );
                 }
 
   // Gender Validator
@@ -623,10 +651,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
             child: Text(
-              'Date of Birth',
+              'Date of Birth *',
               style: TextStyle(
                 fontWeight: FontWeight.w400,
-                fontSize: 15,
+                fontSize: 16,
                 color: Color(0xFF333333),
               ),
             ),
@@ -671,7 +699,12 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
       children: [
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
-          child: Text(label),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16, 
+            ),
+          ),
         ),
         Builder(
           builder: (context) {
@@ -717,6 +750,9 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                 contentPadding: EdgeInsets.symmetric(vertical: 13),
                 filled: true,
                 fillColor: Color(0xFFFFFFFF),
+              ),
+              style: TextStyle(
+                fontSize: 18, 
               ),
             );
           },
@@ -910,12 +946,12 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 40),
+                padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 20),
                 child: Text(
-                  'Please complete the form with your details to help us support you in managing your diabetes effectively.',
+                  'Please fill out the form to help us support your diabetes management.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w400,
-                        fontSize: 14,
+                        fontSize: 19,
                         color: const Color(0xFF666666),
                         letterSpacing: 0.0,
                       ),
@@ -925,37 +961,35 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 context,
                 title: 'How many ',
                 highlightedText: 'long-acting ',
-                description: 'insulin units do you take daily?',
+                description: 'insulin units do you take daily? *',
                 controller: _longActingController,
-                isRequired: false, 
                 errorText: _longActingError,
               ),
               _buildInputField(
                 context,
                 title: 'How many ',
                 highlightedText: 'short-acting ',
-                description: 'insulin units do you take daily?',
+                description: 'insulin units do you take daily? *',
                 controller: _shortActingController,
-                isRequired: false, 
                 errorText: _shortActingError,
               ),
               _buildInputField(
                 context,
                 title: 'What is your ',
                 highlightedText: 'Insulin-to-Carbohydrate ',
-                description: 'ratio? (Optional)',
+                description: 'ratio?',
                 controller: _insulinToCarbController,
-                isRequired: false, 
                 errorText: _insulinToCarbError,
+                hintText: 'Optional', // Add Optional as hint text
               ),
               _buildInputField(
                 context,
                 title: 'What is your ',
                 highlightedText: 'Correction ',
-                description: 'factor? (Optional)',
+                description: 'factor?',
                 controller: _correctionFactorController,
-                isRequired: false,
                 errorText: _correctionFactorError,
+                hintText: 'Optional', // Add Optional as hint text
               ),
               Row(
                 children: [
@@ -985,6 +1019,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                         style: TextStyle(
                           color: const Color(0xFF023B95),
                           decoration: TextDecoration.underline,
+                          fontSize: 16.0,
                         ),
                       ),
                     ),
@@ -1014,7 +1049,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     // Step 4: Proceed with signing up the user in Firebase Auth and Firestore
                     try {
                       await AuthService().signUpWithEmail(
-                        email: widget.email,
+                        email: widget.email.trim().toLowerCase(),
                         password: widget.password,
                         firstName: widget.firstName,
                         lastName: widget.lastName,
@@ -1023,8 +1058,12 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                         dateOfBirth: widget.selectedDate!,
                         dailyBasal: double.parse(_longActingController.text),
                         dailyBolus: double.parse(_shortActingController.text),
-                        carbRatio: _insulinToCarbController.text.isNotEmpty ? double.parse(_insulinToCarbController.text) : null,
-                        correctionRatio: _correctionFactorController.text.isNotEmpty ? double.parse(_correctionFactorController.text) : null,
+                        carbRatio: _insulinToCarbController.text.isNotEmpty 
+                          ? double.parse(_insulinToCarbController.text) 
+                          : double.parse((500/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
+                        correctionRatio: _correctionFactorController.text.isNotEmpty 
+                          ? double.parse(_correctionFactorController.text) 
+                          : double.parse((1800/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
                         gender: widget.isMale ?? false,  
                       );
 
@@ -1048,12 +1087,19 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                             color: Color(0xFF666666),
                           ),
                       children: [
-                        const TextSpan(text: 'Already have an account? '),
+                        const TextSpan(
+                          text: 'Already have an account? ',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16.0,
+                          ),
+                        ),
                         TextSpan(
                           text: 'Log in',
                           style: const TextStyle(
                             color: Color(0xFF023B96),
                             fontWeight: FontWeight.w500,
+                            fontSize: 16.0,
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
@@ -1698,7 +1744,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
     required String description,
     required TextEditingController controller,
     String? errorText,
-    bool isRequired = false,
+    String? hintText, // Add hintText parameter
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -1710,7 +1756,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               text: title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w400,
-                    fontSize: 15,
+                    fontSize: 16,
                     color: const Color(0xFF333333),
                   ),
               children: [
@@ -1719,7 +1765,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF023B95),
-                        fontSize: 15,
+                        fontSize: 16,
                       ),
                 ),
                 TextSpan(
@@ -1727,17 +1773,9 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF333333),
-                        fontSize: 15,
+                        fontSize: 16,
                       ),
                 ),
-                if (isRequired)
-                  TextSpan(
-                    text: ' *',
-                    style: const TextStyle(
-                      color: Color.fromARGB(255, 194, 43, 98),
-                      fontSize: 14,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1747,7 +1785,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
             decoration: InputDecoration(
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
-                  color: const Color(0xFFD8E6FD),
+                  color: Theme.of(context).colorScheme.primary, 
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -1774,28 +1812,21 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               filled: true,
-              fillColor: const Color(0xFFFFFFFF),
+              fillColor: const Color.fromARGB(255, 255, 255, 255),
               errorText: errorText,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              hintText: hintText, // Set hint text
             ),
             keyboardType: TextInputType.numberWithOptions(decimal: true), // Allow decimal numbers
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')), // Allow only numbers and a single decimal point
             ],
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
             cursorColor: Theme.of(context).colorScheme.primary,
-            validator: isRequired
-                ? (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required';
-                    }
-                    return null;
-                  }
-                : null,
           ),
         ],
       ),

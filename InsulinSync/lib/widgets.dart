@@ -9,6 +9,7 @@ import 'models/carbohydrate_model.dart';
 import 'models/glucose_model.dart';
 import 'models/insulin_model.dart';
 import 'models/note_model.dart';
+import 'models/meal_model.dart';
 import 'models/workout_model.dart';
 import 'services/user_service.dart';
 import 'main.dart';
@@ -20,6 +21,7 @@ class CustomTextFormField extends StatefulWidget {
   final String? autofillHint;
   final TextInputAction? textInputAction;
   final IconData? prefixIcon;
+  final bool? readOnly;
   final String? Function(String?)? validator;
 
   const CustomTextFormField({
@@ -31,6 +33,7 @@ class CustomTextFormField extends StatefulWidget {
     this.textInputAction,
     this.prefixIcon,
     this.validator,
+    this.readOnly = false,
   }) : super(key: key);
 
   @override
@@ -49,6 +52,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      readOnly: widget.readOnly ?? false,
       controller: widget.controller,
       focusNode: widget.focusNode,
       autofocus: false,
@@ -87,7 +91,9 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
           borderRadius: BorderRadius.circular(8),
         ),
         filled: true,
-        fillColor: Color(0xFFFFFFFF),
+        fillColor: widget.readOnly == false || widget.readOnly == null
+            ? Color(0xFFFFFFFF) // White color when readOnly is true or null
+            : Colors.grey[200],
         prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
         suffixIcon: widget.obscureText
             ? IconButton(
@@ -105,7 +111,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
             : null,
       ),
       style: TextStyle(
-        fontSize: 16,
+        fontSize: 18,
         letterSpacing: 0.0,
         fontWeight: FontWeight.w500,
         height: 1,
@@ -144,7 +150,9 @@ class CustomButton extends StatelessWidget {
         child: Text(
           text,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                letterSpacing: 0.0,
+                fontSize: 19.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
                 color: Colors.white,
               ),
         ),
@@ -208,6 +216,8 @@ class _ExpandableItemState extends State<ExpandableItem> {
         return Icons.bloodtype;
       case 'Carbohydrate':
         return Icons.fastfood;
+      case 'meal':
+        return Icons.fastfood;
       default:
         return Icons.help;
     }
@@ -223,6 +233,14 @@ class _ExpandableItemState extends State<ExpandableItem> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             title: Row(
               children: [
+                // widget.dataType == 'meal'
+                //? ColorFiltered(
+                //colorFilter: ColorFilter.mode(
+                //Theme.of(context).colorScheme.primary,
+                //BlendMode.srcIn,
+                //),
+                //child: Image.asset('images/salad.png', height: 24),
+                //)
                 Icon(
                   _getIconForDataType(widget.dataType),
                   color: Theme.of(context).colorScheme.primary,
@@ -265,41 +283,89 @@ class _ExpandableItemState extends State<ExpandableItem> {
 
   Widget _buildExpandedView() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: widget.otherAttributes.entries
-            .where((entry) =>
-                entry.value != null && entry.value.toString().isNotEmpty)
-            .map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (entry.key != 'comment')
-                      Text(
-                        '${capitalizeFirstLetter(entry.key)} ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          fontSize: 13,
+        children: [
+          ...widget.otherAttributes.entries
+              .where((entry) =>
+                  entry.value != null &&
+                  entry.value.toString().isNotEmpty &&
+                  !['totalCarb', 'totalProtein', 'totalFat', 'totalCalorie']
+                      .contains(entry.key))
+              .map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (entry.key != 'comment')
+                        Text(
+                          entry.key == 'foodItems'
+                              ? 'Added Ingredients'
+                              : '${capitalizeFirstLetter(entry.key)} ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          getTextForEntry(entry),
+                          textAlign: entry.key == 'comment'
+                              ? TextAlign.left
+                              : TextAlign.right,
+                          style: TextStyle(fontSize: 13),
                         ),
                       ),
-                    Expanded(
-                      child: Text(
-                        getTextForEntry(entry),
-                        textAlign: entry.key == 'comment'
-                            ? TextAlign.left
-                            : TextAlign.right,
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          if (widget.dataType == 'meal') ...[
+            Divider(),
+            // Show nutritional totals for meals
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Carbs'),
+                    Text(
+                        '${widget.otherAttributes['totalCarb']?.toStringAsFixed(1)} g'),
                   ],
                 ),
-              ),
-            )
-            .toList(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Protein'),
+                    Text(
+                        '${widget.otherAttributes['totalProtein']?.toStringAsFixed(1)} g'),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Fat'),
+                    Text(
+                        '${widget.otherAttributes['totalFat']?.toStringAsFixed(1)} g'),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Calories'),
+                    Text(
+                        '${widget.otherAttributes['totalCalorie']?.toStringAsFixed(1)} kcal'),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -336,6 +402,44 @@ String getTextForEntry(MapEntry<String, dynamic> entry) {
         result = 'Short Acting';
       } else {
         result = 'Long Acting';
+      }
+      break;
+
+    case 'totalCarb':
+      result = '${entry.value.toStringAsFixed(1)} g';
+      break;
+
+    case 'totalProtein':
+      result = '${entry.value.toStringAsFixed(1)} g';
+      break;
+
+    case 'totalFat':
+      result = '${entry.value.toStringAsFixed(1)} g';
+      break;
+
+    case 'totalCalorie':
+      result = '${entry.value.toStringAsFixed(1)} kcal';
+      break;
+
+    case 'foodItems': // Add handling for food items
+      if (entry.value is List) {
+        var foodItems = entry.value as List;
+
+        // If there's only one item with portion -1, return empty string
+        if (foodItems.length == 1 && foodItems[0]['portion'] == -1) {
+          result = '-';
+          break;
+        }
+
+        // Filter out items with portion -1 and create the string
+        var validItems = foodItems
+            .where((item) => item['portion'] != -1)
+            .map((item) => '${item['name']} (${item['portion']}g)')
+            .join('\n');
+
+        result = validItems.isEmpty ? '-' : validItems;
+      } else {
+        result = '';
       }
       break;
 
@@ -587,124 +691,138 @@ class _LogbookWidgetState extends State<LogbookWidget> {
                   future: userService.getCarbohydrates(),
                   builder: (context, carbSnapshot) {
                     return FutureBuilder<List<GlucoseReading>>(
-                      future: userService.getGlucoseReadings(),
+                      future: userService.getGlucoseReadings(source: 'manual'),
                       builder: (context, glucoseSnapshot) {
                         return FutureBuilder<List<Workout>>(
                           future: fetchWorkouts(),
                           builder: (context, workoutSnapshotHealth) {
-                            if (noteSnapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                insulinSnapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                workoutSnapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                workoutSnapshotHealth.connectionState ==
-                                    ConnectionState.waiting ||
-                                carbSnapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                glucoseSnapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                              return Center(child: CircularProgressIndicator());
-                            }
+                            return FutureBuilder<List<meal>>(
+                              future: userService.getMeal(),
+                              builder: (context, mealSnapshot) {
+                                if (noteSnapshot.connectionState ==
+                                        ConnectionState.waiting ||
+                                    insulinSnapshot.connectionState ==
+                                        ConnectionState.waiting ||
+                                    workoutSnapshot.connectionState ==
+                                        ConnectionState.waiting ||
+                                    workoutSnapshotHealth.connectionState ==
+                                        ConnectionState.waiting ||
+                                    carbSnapshot.connectionState ==
+                                        ConnectionState.waiting ||
+                                    glucoseSnapshot.connectionState ==
+                                        ConnectionState.waiting ||
+                                    mealSnapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                  return Center(
+                                      child: CircularProgressIndicator());
+                                }
 
-                            if (noteSnapshot.hasError ||
-                                insulinSnapshot.hasError ||
-                                workoutSnapshot.hasError ||
-                                carbSnapshot.hasError ||
-                                glucoseSnapshot.hasError) {
-                              return Center(child: Text('Error loading data'));
-                            }
+                                if (noteSnapshot.hasError ||
+                                    insulinSnapshot.hasError ||
+                                    workoutSnapshot.hasError ||
+                                    carbSnapshot.hasError ||
+                                    glucoseSnapshot.hasError ||
+                                    mealSnapshot.hasError) {
+                                  // Added meal error check
+                                  return Center(
+                                      child: Text('Error loading data'));
+                                }
 
-                            final notes = noteSnapshot.data ?? [];
-                            final insulinDosages = insulinSnapshot.data ?? [];
-                            final workouts = workoutSnapshot.data ?? [];
-                            final workoutsHealth =
-                                workoutSnapshotHealth.data ?? [];
-                            final carbohydrates = carbSnapshot.data ?? [];
-                            final glucoseReadings = glucoseSnapshot.data ?? [];
+                                final notes = noteSnapshot.data ?? [];
+                                final insulinDosages =
+                                    insulinSnapshot.data ?? [];
+                                final workouts = workoutSnapshot.data ?? [];
+                                final workoutsHealth =
+                                    workoutSnapshotHealth.data ?? [];
+                                final carbohydrates = carbSnapshot.data ?? [];
+                                final glucoseReadings =
+                                    glucoseSnapshot.data ?? [];
+                                final meals = mealSnapshot.data ?? [];
 
-                            List<dynamic> combinedEntries = [
-                              ...notes,
-                              ...insulinDosages,
-                              ...workouts,
-                              ...workoutsHealth,
-                              ...carbohydrates,
-                              ...glucoseReadings,
-                            ];
+                                List<dynamic> combinedEntries = [
+                                  ...notes,
+                                  ...insulinDosages,
+                                  ...workouts,
+                                  ...workoutsHealth,
+                                  ...carbohydrates,
+                                  ...glucoseReadings,
+                                  ...meals,
+                                ];
 
-                            combinedEntries =
-                                filterEntriesForSpecificDate(combinedEntries);
+                                combinedEntries = filterEntriesForSpecificDate(
+                                    combinedEntries);
+                                combinedEntries
+                                    .sort((a, b) => b.time.compareTo(a.time));
 
-                            combinedEntries
-                                .sort((a, b) => b.time.compareTo(a.time));
-
-                            if (combinedEntries.isEmpty) {
-                              return Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        blurRadius: 5.0,
-                                        color: Color(0x230E151B),
-                                        offset: Offset(
-                                          0.0,
-                                          2.0,
+                                if (combinedEntries.isEmpty) {
+                                  return Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            blurRadius: 5.0,
+                                            color: Color(0x230E151B),
+                                            offset: Offset(0.0, 2.0),
+                                          ),
+                                        ],
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                            4.0, 4.0, 4.0, 13.0),
+                                        child: SingleChildScrollView(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              if (widget.isHome)
+                                                Padding(
+                                                  padding: EdgeInsetsDirectional
+                                                      .fromSTEB(16.0, 12.0, 0.0,
+                                                          19.0),
+                                                  child: Text(
+                                                    'Logbook',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                          letterSpacing: 0,
+                                                          fontSize: 20,
+                                                        ),
+                                                  ),
+                                                ),
+                                              Center(
+                                                child: Text(
+                                                  widget.isHome
+                                                      ? 'Nothing Today'
+                                                      : 'No data for the selected date',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ],
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
-                                        4.0, 4.0, 4.0, 13.0),
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          if (widget.isHome)
-                                            Padding(
-                                              padding: EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      16.0, 12.0, 0.0, 19.0),
-                                              child: Text(
-                                                'Logbook',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                        letterSpacing: 0,
-                                                        fontSize: 20),
-                                              ),
-                                            ),
-                                          Center(
-                                              child: Text(
-                                            widget.isHome
-                                                ? 'Nothing Today'
-                                                : 'No data for the selected date',
-                                          ))
-                                        ],
-                                      ),
                                     ),
+                                  );
+                                }
+
+                                Map<String, List<dynamic>> entriesByDate =
+                                    separateEntriesByDate(combinedEntries);
+
+                                return Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: buildDateEntries(entriesByDate),
                                   ),
-                                ),
-                              );
-                            }
-
-                            Map<String, List<dynamic>> entriesByDate =
-                                separateEntriesByDate(combinedEntries);
-
-                            return Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Column(
-                                children: buildDateEntries(entriesByDate),
-                              ),
+                                );
+                              },
                             );
                           },
                         );

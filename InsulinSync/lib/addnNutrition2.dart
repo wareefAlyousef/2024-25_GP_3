@@ -1,28 +1,49 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulin_sync/MainNavigation.dart';
 import 'home_screen.dart';
 import 'main.dart';
-import '../models/note_model.dart';
+import 'AddBySearch.dart';
+import '../models/foodItem_model.dart';
 import '../services/user_service.dart';
+import 'Cart.dart';
+import '../models/meal_model.dart';
 
-class AddNote extends StatefulWidget {
+class AddNutrition2 extends StatefulWidget {
   @override
-  _AddNoteState createState() => _AddNoteState();
+  AddNutrition2();
+ 
+  _AddNutrition2 createState() => _AddNutrition2();
 }
 
-class _AddNoteState extends State<AddNote> {
+class _AddNutrition2 extends State<AddNutrition2> {
+ late List<foodItem> mealItems;
+  String _carb = "";
+  String _fat = "";
+  String _protein = "";
+  String _calorie= "";
+  String _name = "";
   final _formKey = GlobalKey<FormState>();
-  String _title = "";
-  String _note = "";
   TimeOfDay _timeOfDay = TimeOfDay.now();
   DateTime _now = new DateTime.now();
-  FocusNode myfocus = FocusNode();
+  FocusNode myfocus1 = FocusNode();
   FocusNode myfocus2 = FocusNode();
+  FocusNode myfocus3 = FocusNode();
+  FocusNode myfocus4 = FocusNode();
+  FocusNode myfocus5 = FocusNode();
+  
 
-  void _showTimePicker() {
-    myfocus.unfocus();
+
+
+    void _showTimePicker() {
+       myfocus1.unfocus();
     myfocus2.unfocus();
+     myfocus3.unfocus();
+    myfocus4.unfocus();
+     myfocus5.unfocus();
+  
+   
     showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -49,16 +70,25 @@ class _AddNoteState extends State<AddNote> {
     });
   }
 
-  // Method to show confirmation dialog
+
+
   void _showConfirmationDialog() {
-    myfocus.unfocus();
+    
+    myfocus1.unfocus();
     myfocus2.unfocus();
+    myfocus3.unfocus();
+    myfocus4.unfocus();
+    myfocus5.unfocus();
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        String $note = _note;
-        String $title = _title;
+       String $carb = _carb; 
+       String $protein = _protein;      
+       String $fat = _fat;
+       String $calorie = _calorie;
+
+        String $title = _name;
         String $time = _timeOfDay.format(context);
 
         return AlertDialog(
@@ -121,7 +151,7 @@ class _AddNoteState extends State<AddNote> {
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: Text(
-                            'Note: ',
+                            'Carb: ',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.normal,
@@ -134,7 +164,97 @@ class _AddNoteState extends State<AddNote> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            $note,
+                            $carb,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                   SizedBox(height: 20),
+                    Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Protein: ',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            $protein,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                    SizedBox(height: 20),
+                    Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Fat: ',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            $fat,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                    SizedBox(height: 20),
+                    Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Calorie: ',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            $calorie,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -237,17 +357,39 @@ class _AddNoteState extends State<AddNote> {
       },
     );
   }
+ 
 
-// Form submission method
   Future<void> _submitForm() async {
+    print("submit1111");
     if (_formKey.currentState!.validate()) {
-      DateTime _newDateTime = DateTime(_now.year, _now.month, _now.day,
+DateTime _newDateTime = DateTime(_now.year, _now.month, _now.day,
           _timeOfDay.hour, _timeOfDay.minute, 0);
+double _carbdouble = double.parse(_carb);
+double _proteindouble = double.parse(_protein);
+double _fatdouble = double.parse(_fat);
+double _caloriedouble = double.parse(_calorie);
+String name = _name;
 
-      Note myNote = Note(time: _newDateTime, title: _title, comment: _note);
+   
 
-      UserService sevice = new UserService();
-      if (await sevice.addNote(myNote)) {
+ final newItem = foodItem(
+        name: name,
+        calorie: _caloriedouble,
+        protein: _proteindouble,
+        carb: _carbdouble,
+        fat: _fatdouble,
+        portion: -1, 
+        source: "nutritions",
+      );
+
+
+
+meal mymeal = meal(time: _newDateTime , title: name , foodItems: [newItem] );
+print("meal created");
+
+ UserService sevice = new UserService();
+   if (await sevice.addMeal(mymeal)) {
+    print("meal added");
         showDialog(
   context: context,
   barrierDismissible: false,
@@ -263,7 +405,7 @@ class _AddNoteState extends State<AddNote> {
           ),
           SizedBox(height: 25),
           Text(
-            'Note is added successfully!',
+            'Nutritions are added successfully!',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22),
           ),
@@ -301,6 +443,7 @@ Future.delayed(Duration(seconds: 3), () {
   );
 });
       } else {
+        print("meal not added");
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -316,7 +459,7 @@ Future.delayed(Duration(seconds: 3), () {
                   ),
                   SizedBox(height: 25),
                   Text(
-                    'Failed adding the note!',
+                    'Failed adding the Nutritions!',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22),
                   ),
@@ -355,6 +498,14 @@ Future.delayed(Duration(seconds: 3), () {
       }
     } else {}
   }
+   
+
+
+
+
+
+   
+
 
   @override
   Widget build(BuildContext context) {
@@ -369,8 +520,8 @@ Future.delayed(Duration(seconds: 3), () {
             size: 30.0,
           ),
           onPressed: () {
-            Navigator.pop(context);
-          },
+                 Navigator.pop(context);
+                    },
         ),
       ),
       body: SingleChildScrollView(
@@ -379,26 +530,26 @@ Future.delayed(Duration(seconds: 3), () {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              //page title
+//page title
               Padding(
                 padding: EdgeInsets.fromLTRB(5, 20, 15, 10),
                 child: Text(
-                  'Add Note',
+                  'Add Nutritions',
                   style: TextStyle(
                     
-                    fontSize: 36, 
+                    fontSize: 30, 
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
               ),
-              //form
+//form
               Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // white square
+// white square
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -411,14 +562,15 @@ Future.delayed(Duration(seconds: 3), () {
                         ],
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      //inside the container
+//inside the container
                       child: Column(
                         children: [
-                          //user input 1
+//user input 1
                           Padding(
                             padding: EdgeInsets.fromLTRB(25, 30, 25, 0),
                             child: TextFormField(
-                              focusNode: myfocus,
+                              focusNode: myfocus1,
+                          
                               decoration: InputDecoration(
                                 hintText: 'Title (Optional)',
                                 filled: true,
@@ -435,49 +587,332 @@ Future.delayed(Duration(seconds: 3), () {
                                 if (value != null && value.length > 20) {
                                   return 'Title cannot exceed 20 characters';
                                 }
+                                if (value == null || value.length == 0) {
+                                 value= "Nutritions";
+                                }
+
+                                _name = value;
                                 return null; // validation passed
                               },
-                              onSaved: (value) {
-                                _title = (value == null || value.isEmpty)
-                                    ? 'Note'
-                                    : value;
-                              },
+                             
                             ),
                           ),
-                          //user input 2
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(25, 30, 25, 0),
-                            child: TextFormField(
-                              //note form field
-                              focusNode: myfocus2,
-                              decoration: InputDecoration(
-                                hintText: 'Leave your note here',
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              maxLines: 3,
-                              style: TextStyle(
-                                fontSize: 18, 
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please leave a note';
-                                }
-                                if (value.length > 160) {
-                                  return 'Note cannot exceed 160 characters';
-                                }
-                                _note = value;
-                                return null; // If all validations pass
-                              },
-                            ),
-                          ),
-                          // container for time title
+// user input 2
+Padding(
+  padding: EdgeInsets.fromLTRB(25, 25, 0, 0),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.center, 
+    children: [
+      Container(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Carb * ',
+          style: TextStyle(
+            fontSize: 25,
+            color: Color.fromRGBO(96, 106, 133, 1),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      SizedBox(width: 16), 
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(0, 0, 25, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  focusNode: myfocus2,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                  ],
+                  decoration: InputDecoration(
+                  
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter the carb';
+                    }
+                    
+                    final carbValue = double.tryParse(value);
+                  
+                    if (!RegExp(r'^\d+\.?\d{0,2}$').hasMatch(value)) {
+                      return '2 decimal places only';
+                    }
+                    _carb = value;
+                    return null; // If all validations pass
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                child: Text(
+                  '     g',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+// user input 3
+Padding(
+  padding: EdgeInsets.fromLTRB(25, 25, 0, 0),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.center, 
+    children: [
+      Container(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Protein',
+          style: TextStyle(
+            fontSize: 25,
+            color: Color.fromRGBO(96, 106, 133, 1),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      SizedBox(width: 16), 
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(0, 0, 25, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  focusNode: myfocus3,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: 'Optional',
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      value="0";
+                    }
+                    
+                    final proteinValue = double.tryParse(value);
+                    
+                    if (!RegExp(r'^\d+\.?\d{0,2}$').hasMatch(value)) {
+                      return '2 decimal places only';
+                    }
+                    _protein = value;
+                    return null; // If all validations pass
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                child: Text(
+                  '     g',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+                         // user input 4
+Padding(
+  padding: EdgeInsets.fromLTRB(25, 25, 0, 0),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.center, 
+    children: [
+      Container(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Fat       ',
+          style: TextStyle(
+            fontSize: 25,
+            color: Color.fromRGBO(96, 106, 133, 1),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      SizedBox(width: 16), 
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(0, 0, 25, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  focusNode: myfocus4,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: 'Optional',
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  validator: (value) {
+                    
+                    if (value == null || value.isEmpty) {
+                      value="0";
+                    }
+                    
+                    final fatValue = double.tryParse(value);
+                   
+                    if (!RegExp(r'^\d+\.?\d{0,2}$').hasMatch(value)) {
+                      return '2 decimal places only';
+                    }
+                    _fat = value;
+                    return null; // If all validations pass
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                child: Text(
+                  '     g',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+                         
+ // user input 5
+Padding(
+  padding: EdgeInsets.fromLTRB(25, 25, 0, 0),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.center, 
+    children: [
+      Container(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Calorie',
+          style: TextStyle(
+            fontSize: 25,
+            color: Color.fromRGBO(96, 106, 133, 1),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      SizedBox(width: 16), 
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(0, 0, 25, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  focusNode: myfocus5,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: 'Optional',
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      value="0";
+                    }
+                    
+                    final calorieValue = double.tryParse(value);
+                    
+                    if (!RegExp(r'^\d+\.?\d{0,2}$').hasMatch(value)) {
+                      return '2 decimal places only';
+                    }
+                    _calorie = value;
+                    return null; // If all validations pass
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                child: Text(
+                  'kcal',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+        SizedBox(height: 10),   
+          // container for time title
                           Padding(
                             padding: EdgeInsets.fromLTRB(25, 20, 0, 0),
                             child: Container(
@@ -493,7 +928,7 @@ Future.delayed(Duration(seconds: 3), () {
                             ),
                           ),
 
-                          // container for time user input 3
+// container for time user input 3
                           Padding(
                             padding: EdgeInsets.fromLTRB(25, 5, 0, 20),
                             child: Row(
@@ -529,7 +964,7 @@ Future.delayed(Duration(seconds: 3), () {
                                     ),
                                   ),
                                 ),
-                                //displaying the chosen time
+//displaying the chosen time
                                 Padding(
                                   padding: EdgeInsets.fromLTRB(25, 5, 0, 0),
                                   child: Container(
@@ -546,14 +981,16 @@ Future.delayed(Duration(seconds: 3), () {
                                 ),
                               ],
                             ),
-                          ),
+                          ),            
+
+                          
+                         
                         ],
                       ),
                     ),
 
                     Padding(
-                      padding:
-                          EdgeInsets.fromLTRB(0, 50, 0, 0), 
+                      padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
                       child: Row(
                         children: [
                           Expanded(

@@ -103,7 +103,7 @@ class _logIn extends State<logIn> {
                                 'Welcome Back',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 29,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -112,7 +112,7 @@ class _logIn extends State<logIn> {
                                 child: Text(
                                   'Fill out the information below to log-in to your account.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16),
+                                  style: TextStyle(fontSize: 19),
                                 ),
                               ),
                               buildTextField(
@@ -120,7 +120,7 @@ class _logIn extends State<logIn> {
                                 controller: _emailController,
                                 validator: emailValidator,
                                 icon: Icons.email,
-                                errorText: _emailErrorMessage, 
+                                errorText: _emailErrorMessage,
                               ),
 
                               buildTextField(
@@ -129,7 +129,7 @@ class _logIn extends State<logIn> {
                                 controller: _passwordController,
                                 validator: passwordValidator,
                                 icon: Icons.lock,
-                                errorText: _passwordErrorMessage, 
+                                errorText: _passwordErrorMessage,
                               ),
                               Padding(
                                 padding: EdgeInsetsDirectional.fromSTEB(0, 12, 0, 12),
@@ -141,6 +141,7 @@ class _logIn extends State<logIn> {
                                         style: TextStyle(
                                           color: Theme.of(context).primaryColor, 
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 16.0,
                                         ),
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () {
@@ -162,7 +163,15 @@ class _logIn extends State<logIn> {
                                 ),
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                  child: Text('Log In', style: TextStyle(fontSize: 16)),
+                                  child: Text(
+                                    'Log In', 
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontSize: 19.0,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.3,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                               Padding(padding: EdgeInsetsDirectional.fromSTEB(0, 12, 0, 6)),
@@ -173,13 +182,17 @@ class _logIn extends State<logIn> {
                                     children: [
                                       TextSpan(
                                         text: 'Don\'t have an account?  ',
-                                        style: TextStyle(color: Colors.black),
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16.0,
+                                        ),
                                       ),
                                       TextSpan(
                                         text: 'Create Account',
                                         style: TextStyle(
                                           color: Theme.of(context).primaryColor,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 16.0,
                                         ),
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () {
@@ -247,56 +260,58 @@ class _logIn extends State<logIn> {
       try {
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
-            .where('email', isEqualTo: _emailController.text.trim())
+            .where('email', isEqualTo: _emailController.text.trim().toLowerCase())
             .get();
 
+        // Unified error message to prevent information leakage
         if (userDoc.docs.isEmpty) {
           setState(() {
-            _emailErrorMessage = 'We couldn\'t find an account with this email. Please double-check your email or create a new account.';
+            _emailErrorMessage = 'Either the email or password is incorrect. Please try again.';
+            _passwordErrorMessage = _emailErrorMessage;
           });
           return;
         }
 
         final user = await _authService.loginWithEmail(
-          _emailController.text.trim(),
+          _emailController.text.trim().toLowerCase(),
           _passwordController.text.trim(),
         );
 
         if (user != null) {
           _showLoginSuccessDialog(context);
         }
-      } catch (e) { 
-          print('Login Error: $e');
-          if (e is FirebaseAuthException) {
-            if (e.code == 'wrong-password') {
-              setState(() {
-                _passwordErrorMessage = 'Incorrect password. Please try again or reset your password.';
-              });
-            } else if (e.code == 'user-not-found') {
-              setState(() {
-                _emailErrorMessage = 'We couldn\'t find an account with that email. Please double-check or sign up for a new account.';
-              });
-            } else {
-              setState(() {
-                _emailErrorMessage = 'Login issue: ${e.message}. Please try again or contact support if the problem continues.';
-              });
-            }
+      } catch (e) {
+        print('Login Error: $e');
+        if (e is FirebaseAuthException) {
+          // Unified message for specific authentication errors
+          if (e.code == 'wrong-password' || e.code == 'user-not-found') {
+            setState(() {
+              _emailErrorMessage = 'Either the email or password is incorrect. Please try again.';
+              _passwordErrorMessage = _emailErrorMessage;
+            });
           } else {
             setState(() {
-              _emailErrorMessage = 'Something went wrong. Please check your connection and try again.';
+              _emailErrorMessage = 'We encountered an issue. Please try again or contact support if this continues.';
+              _passwordErrorMessage = _emailErrorMessage;
             });
           }
+        } else {
+          setState(() {
+            _emailErrorMessage = 'Oops, something went wrong. Please check your connection and try again.';
+            _passwordErrorMessage = _emailErrorMessage;
+          });
+        }
       }
     }
   }
 
-  buildTextField({
+  Widget buildTextField({
     required String label,
     bool isObscured = false,
     required TextEditingController controller,
     required IconData icon,
     String? Function(String?)? validator,
-    String? errorText, 
+    String? errorText,
   }) {
     final FocusNode focusNode = FocusNode();
     
@@ -312,7 +327,12 @@ class _logIn extends State<logIn> {
         children: [
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
-            child: Text(label),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16.0,
+              ),
+            ),
           ),
           Stack(
             children: [
@@ -359,6 +379,7 @@ class _logIn extends State<logIn> {
       ),
     );
   }
+
 
 
   void _showPasswordResetDialog(BuildContext context) {
@@ -441,7 +462,7 @@ class _logIn extends State<logIn> {
                         SizedBox(width: 19), 
                         ElevatedButton(
                           onPressed: () async {
-                            String email = _resetEmailController.text.trim();
+                            String email = _resetEmailController.text.trim().toLowerCase();
 
                             final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
 

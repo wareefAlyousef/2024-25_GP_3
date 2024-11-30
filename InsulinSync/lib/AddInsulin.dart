@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:insulin_sync/MainNavigation.dart';
+import 'package:insulin_sync/models/glucose_model.dart';
+import 'package:insulin_sync/models/meal_model.dart';
 import 'home_screen.dart';
 import 'main.dart';
 
@@ -79,6 +81,7 @@ class _AddInsulin extends State<AddInsulin> {
     });
   }
 
+
   String? _errorMessage = null;
   void _validate() {
     _validateInsulin();
@@ -97,226 +100,242 @@ class _AddInsulin extends State<AddInsulin> {
   }
 
   // Method to show confirmation dialog
-  void _showConfirmationDialog() {
-    myfocus.unfocus();
-    myfocus2.unfocus();
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        String $title = _title;
-        String $selectedType = _selectedType;
-        String $amount = _amount;
-        String $time = _timeOfDay.format(context);
-        String $selectedType2 = _selectedType2;
-        return AlertDialog(
-            contentPadding: EdgeInsets.all(16),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 80,
-                    backgroundColor: Color.fromARGB(41, 248, 77, 117),
-                    child: Icon(
-                      FontAwesomeIcons.syringe,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Are You Sure?',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 30),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Title:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            $title, // Display time with title
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Insulin Amount:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            $amount,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Insulin Type:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            $selectedType2,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'Time:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            $time,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
+  void _showConfirmationDialog() async {
+  myfocus.unfocus();
+  myfocus2.unfocus();
 
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      // Cancel button
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(); // Close the dialog
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.error,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            minimumSize:
-                                Size(120, 44), // Make buttons the same size
-                          ),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
+  final UserService userService = UserService();
+  final double enteredInsulinAmount = double.tryParse(_amount) ?? 0;
+
+  // Fetch necessary attributes
+  final double correctionRatio = await userService.getUserAttribute('correctionRatio');
+  final double carbRatio = await userService.getUserAttribute('carbRatio');
+  final double dailyBasal = await userService.getUserAttribute('dailyBasal');
+
+  // Define target blood sugar level
+  const double targetBloodSugar = 120;
+
+  // Determine the chosen time for the insulin dosage entry
+  final DateTime selectedTime = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+    _timeOfDay.hour,
+    _timeOfDay.minute,
+  );
+
+  if (_selectedType == "Bolus") {
+    // Fetch recent meal entries within the last 30 minutes before the selected time
+    final List<meal> recentMeals = await userService.getMeal();
+    final List<meal> recentMealEntries = recentMeals.where((meal) {
+      return meal.time.isAfter(selectedTime.subtract(Duration(minutes: 30))) &&
+             meal.time.isBefore(selectedTime);
+    }).toList();
+
+    double totalCarbs = 0;
+    if (recentMealEntries.isNotEmpty) {
+      // Sum up carbs from recent meal entries
+      totalCarbs = recentMealEntries.fold(0, (sum, meal) {
+        return sum + meal.foodItems.fold(0, (foodSum, item) => foodSum + item.carb);
+      });
+    }
+
+    // Fetch the most recent glucose reading
+    final List<GlucoseReading> glucoseReadings = await userService.getGlucoseReadings();
+    glucoseReadings.sort((a, b) => b.time.compareTo(a.time));
+    final double actualBloodSugar = glucoseReadings.isNotEmpty ? glucoseReadings.first.reading : 120;
+
+    // Calculate correction dose
+    final double correctionDose = (actualBloodSugar - targetBloodSugar) / correctionRatio;
+
+    double totalMealtimeDose = correctionDose;
+
+    if (recentMealEntries.isNotEmpty) {
+      // Calculate CHO Insulin Dose if recent meals are present
+      final double choInsulinDose = totalCarbs / carbRatio;
+      totalMealtimeDose += choInsulinDose;
+    }
+
+    // Check for past insulin entries within the last 120 minutes
+    final List<InsulinDosage> recentInsulinEntries = await userService.getInsulinDosages();
+    final List<InsulinDosage> pastInsulinEntries = recentInsulinEntries.where((entry) {
+      return entry.time.isAfter(selectedTime.subtract(Duration(minutes: 120))) &&
+             entry.time.isBefore(selectedTime);
+    }).toList();
+
+    final double summedPastInsulinDoses =
+        pastInsulinEntries.fold(0, (sum, entry) => sum + entry.dosage);
+
+    // Calculate threshold
+    final double threshold = 1.5 + (totalMealtimeDose - summedPastInsulinDoses);
+
+    // Determine dialog color
+    final bool isAboveThreshold = enteredInsulinAmount > threshold;
+    final Color alertColor = isAboveThreshold
+        ? Theme.of(context).colorScheme.error // Keep red
+        : Color.fromARGB(255, 241, 193, 0);  // Change to yellow
+
+    final Color secondaryColor = isAboveThreshold
+        ? Color.fromARGB(41, 248, 77, 117) // Keep light red
+        : Color.fromARGB(255, 255, 244, 200); // Change to light yellow
+
+    _showDialog(alertColor, secondaryColor, isAboveThreshold);
+  } else if (_selectedType == "Basal") {
+    // Compare entered amount with daily basal
+    final bool isAboveThreshold = enteredInsulinAmount > dailyBasal;
+
+    // Determine dialog color
+    final Color alertColor = isAboveThreshold
+        ? Theme.of(context).colorScheme.error // Keep red
+        : Color.fromARGB(255, 241, 193, 0);  // Change to yellow
+
+    final Color secondaryColor = isAboveThreshold
+        ? Color.fromARGB(41, 248, 77, 117) // Keep light red
+        : Color.fromARGB(255, 255, 244, 200); // Change to light yellow
+
+    _showDialog(alertColor, secondaryColor, isAboveThreshold);
+  }
+}
+
+// Helper method to display the dialog
+void _showDialog(Color alertColor, Color secondaryColor, bool isAboveThreshold) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        contentPadding: EdgeInsets.all(16),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Circle Avatar with dynamic alert color
+              CircleAvatar(
+                radius: 80,
+                backgroundColor: secondaryColor,
+                child: Icon(
+                  FontAwesomeIcons.syringe,
+                  size: 80,
+                  color: alertColor,
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Header Text
+              Text(
+                'Are You Sure?',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 30),
+
+              // Details Section
+              _buildDetailRow('Title:', _title),
+              SizedBox(height: 20),
+              _buildDetailRow('Insulin Amount:', _amount),
+              SizedBox(height: 20),
+              _buildDetailRow('Insulin Type:', _selectedType),
+              SizedBox(height: 20),
+              _buildDetailRow('Time:', _timeOfDay.format(context)),
+
+              SizedBox(height: 30),
+
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  // Cancel Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: alertColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        minimumSize: Size(120, 44),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
                         ),
                       ),
-                      SizedBox(width: 20),
-                      // Add button
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(); // Close the dialog
-                            _submitForm();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Theme.of(context).colorScheme.error),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            minimumSize:
-                                Size(120, 44), // Make buttons the same size
-                          ),
-                          child: Text(
-                            'Add',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontSize: 16,
-                            ),
-                          ),
+                    ),
+                  ),
+                  SizedBox(width: 20),
+
+                  // Add Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                        _submitForm(); // Submit form data
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: alertColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        minimumSize: Size(120, 44),
+                      ),
+                      child: Text(
+                        'Add',
+                        style: TextStyle(
+                          color: alertColor,
+                          fontSize: 16,
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ));
-      },
-    );
-  }
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// Helper method to create a consistent detail row
+Widget _buildDetailRow(String label, String value) {
+  return Row(
+    children: [
+      Expanded(
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+      SizedBox(width: 20),
+      Expanded(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
 // form submission method
-
   void _submitForm() async {
     if (_formKey.currentState!.validate() && _errorMessage == null) {
 // If the form is valid we should replace this with our submission logic
@@ -351,16 +370,39 @@ class _AddInsulin extends State<AddInsulin> {
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22),
                   ),
-                ],
-              ),
-            );
-          },
-        );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => MainNavigation()),
-          (Route<dynamic> route) => false, // Remove all previous routes
-        );
+          SizedBox(height: 30), 
+          OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => MainNavigation()),
+    (Route<dynamic> route) => false,
+  );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Color(0xff023b96),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: Size(100, 44),
+                    ),
+                    child: Text(
+                      'Close',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+        ],
+      ),
+    );
+  },
+);
+Future.delayed(Duration(seconds: 3), () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => MainNavigation()),
+    (Route<dynamic> route) => false,
+  );
+});
       } else {
         showDialog(
           context: context,

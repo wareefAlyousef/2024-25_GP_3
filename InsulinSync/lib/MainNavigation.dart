@@ -3,6 +3,7 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'home_screen.dart';
 import 'history.dart';
+import 'Setting.dart';
 
 class MainNavigation extends StatefulWidget {
   @override
@@ -15,7 +16,8 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [
     History(),
     Home(),
-    Container(),
+    Setting(),
+    // Container()
   ];
 
   @override

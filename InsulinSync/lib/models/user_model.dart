@@ -4,6 +4,7 @@ import 'glucose_model.dart';
 import 'insulin_model.dart';
 import 'note_model.dart';
 import 'workout_model.dart';
+import 'meal_model.dart';
 
 // Not sure what is optional, will be modified
 class UserModel {
@@ -18,12 +19,14 @@ class UserModel {
   double dailyBasal;
   double? carbRatio;
   double? correctionRatio;
-  // String? patientId      later for the connection with the cgm
+  String? patientId, token, libreEmail;
+  int? minRange, maxRange;
   List<GlucoseReading>? glucoseReadings;
   List<double>? carbohydrates;
   List<Note>? notes;
   List<InsulinDosage>? insulinDosages;
   List<Workout>? workouts;
+  List<meal>? meals;
 
   UserModel({
     required this.firstName,
@@ -37,11 +40,17 @@ class UserModel {
     required this.dailyBasal,
     this.carbRatio,
     this.correctionRatio,
+    this.patientId,
+    this.token,
+    this.libreEmail,
+    this.minRange,
+    this.maxRange,
     this.glucoseReadings,
     this.carbohydrates,
     this.notes,
     this.insulinDosages,
     this.workouts,
+    this.meals,
   });
 
   factory UserModel.fromMap(Map<dynamic, dynamic> map) {
@@ -57,6 +66,11 @@ class UserModel {
       dailyBasal: map['dailyBasal'].toDouble(),
       carbRatio: map['carbRatio']?.toDouble(),
       correctionRatio: map['correctionRatio']?.toDouble(),
+      patientId: map['patientId'] as String?,
+      token: map['token'] as String?,
+      libreEmail: map['libreEmail'] as String?,
+      minRange: map['minRange'] as int?,
+      maxRange: map['maxRange'] as int?,
       glucoseReadings: map['glucoseReadings'] != null
           ? (map['glucoseReadings'] as List<dynamic>)
               .map((item) =>
@@ -82,6 +96,11 @@ class UserModel {
               .map((item) => Workout.fromMap(item as Map<String, dynamic>))
               .toList()
           : [],
+      //meals: map['meals'] != null
+      //    ? (map['meals'] as List<dynamic>)
+      //        .map((item) => meal.fromMap(item as Map<String, dynamic>))
+        //      .toList()
+          //: [],
     );
   }
 
@@ -98,6 +117,11 @@ class UserModel {
       'dailyBasal': dailyBasal,
       'carbRatio': carbRatio,
       'correctionRatio': correctionRatio,
+      'patientId': patientId,
+      'token': token,
+      'libreEmail': libreEmail,
+      'minRange': minRange,
+      'maxRange': maxRange,
       'glucoseReadings':
           glucoseReadings?.map((glucose) => glucose.toMap()).toList(),
       'carbohydrates': carbohydrates,
@@ -105,6 +129,7 @@ class UserModel {
       'insulinDosages':
           insulinDosages?.map((dosage) => dosage.toMap()).toList(),
       'workouts': workouts?.map((workout) => workout.toMap()).toList(),
+      'meals': meals?.map((meal) => meal.toMap()).toList(),
     };
   }
 }

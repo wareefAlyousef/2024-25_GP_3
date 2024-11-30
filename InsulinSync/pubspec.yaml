@@ -38,17 +38,23 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_health_connect: ^1.2.3
+  barcode_scan2: ^4.0.0
+  flutter_barcode_scanner: ^2.0.0
+  http: ^1.2.2 
   font_awesome_flutter: ^10.7.0
   google_fonts: ^6.2.1
   intl: ^0.19.0
   percent_indicator: ^4.2.3
   provider: ^6.1.2
   store_redirect: ^2.0.2
+  fl_chart: ^0.69.0
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
+  dcdg: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -62,6 +68,23 @@ flutter:
 
   assets:
     - images/logoicon.png
+    - images/wheat.png
+    - images/leg.png
+    - images/lipid.png
+    - images/barcode_scanner.png
+    - images/salad.png
+    - images/FSicon.png
+    - images/LLUicon.png
+    - images/circle-1.png
+    - images/circle-2.png
+    - images/circle-3.png
+    - images/circle-4.png
+    - images/circle-5.png
+    - images/
+    - images/insulinIcon.png
+    - images/workoutIcon.png
+    - images/mealIcon.png
+    - images/plate.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -63,7 +63,6 @@ class ExerciseConstants {
   static const int EXERCISE_TYPE_WHEELCHAIR = 82;
   static const int EXERCISE_TYPE_YOGA = 83;
 
-  // Create a map that associates exercise type constants with their string representations.
   static const Map<int, String> exerciseTypeMap = {
     EXERCISE_TYPE_BADMINTON: 'Badminton',
     EXERCISE_TYPE_BASEBALL: 'Baseball',

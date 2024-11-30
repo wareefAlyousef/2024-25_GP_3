@@ -282,11 +282,13 @@ class _AddCarb extends State<AddCarb> {
             );
           },
         );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => MainNavigation()),
-          (Route<dynamic> route) => false, // Remove all previous routes
-        );
+         Future.delayed(Duration(seconds: 3), () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigation()),
+            (Route<dynamic> route) => false, 
+          );
+        });
       } else {
         showDialog(
           context: context,

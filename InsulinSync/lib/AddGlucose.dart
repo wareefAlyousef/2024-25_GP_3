@@ -280,16 +280,39 @@ class _AddGlucose extends State<AddGlucose> {
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22),
                   ),
-                ],
-              ),
-            );
-          },
-        );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => MainNavigation()),
-          (Route<dynamic> route) => false, // Remove all previous routes
-        );
+                         SizedBox(height: 30), 
+          OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => MainNavigation()),
+    (Route<dynamic> route) => false,
+  );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Color(0xff023b96),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: Size(100, 44),
+                    ),
+                    child: Text(
+                      'Close',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+        ],
+      ),
+    );
+  },
+);
+Future.delayed(Duration(seconds: 3), () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => MainNavigation()),
+    (Route<dynamic> route) => false,
+  );
+});
       } else {
         showDialog(
           context: context,
