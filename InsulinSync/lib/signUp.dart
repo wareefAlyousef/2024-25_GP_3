@@ -1026,6 +1026,111 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   ),
                 ],
               ),
+              // CustomButton(
+              //   text: 'Create Account',
+              //   onPressed: () async {
+              //     // Step 1: Validate the insulin input
+              //     _validateInsulinInput(context);
+
+              //     // Only proceed if there are no validation errors
+              //     if (_longActingError == null && _shortActingError == null && _insulinToCarbError == null && _correctionFactorError == null) {
+              //       // Step 2: Show the confirmation dialog and capture the result (true for Confirm, false for Cancel)
+              //       bool confirmed = await _showConfirmationDialog(context);
+
+              //       // If the user cancels the confirmation dialog, stop here
+              //       if (!confirmed) return;
+
+              //       // Step 3: Check if the user has agreed to the terms
+              //       if (!_isAgreedToTerms) {
+              //         _showTermsNotAgreedDialog(context);
+              //         return;
+              //       }
+
+              //       // Step 4: Proceed with signing up the user in Firebase Auth and Firestore
+              //       try {
+              //         await AuthService().signUpWithEmail(
+              //           email: widget.email.trim().toLowerCase(),
+              //           password: widget.password,
+              //           firstName: widget.firstName,
+              //           lastName: widget.lastName,
+              //           weight: double.parse(widget.weight),
+              //           height: double.parse(widget.height),
+              //           dateOfBirth: widget.selectedDate!,
+              //           dailyBasal: double.parse(_longActingController.text),
+              //           dailyBolus: double.parse(_shortActingController.text),
+              //           carbRatio: _insulinToCarbController.text.isNotEmpty 
+              //             ? double.parse(_insulinToCarbController.text) 
+              //             : double.parse((500/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
+              //           correctionRatio: _correctionFactorController.text.isNotEmpty 
+              //             ? double.parse(_correctionFactorController.text) 
+              //             : double.parse((1800/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
+              //           gender: widget.isMale ?? false,  
+              //         );
+
+              //         // Step 5: Show success dialog and navigate to the Home page
+              //         _showSuccessDialog(context);
+              //       } catch (e) {
+              //         // Step 4b: Show error dialog if sign-up fails
+              //         _showErrorDialog(context, 'Sign-up failed', e.toString());
+              //       }
+              //     }
+              //   },
+              // ),
+              // CustomButton(
+              //   text: 'Create Account',
+              //   onPressed: () async {
+              //     // Step 1: Validate the insulin input
+              //     _validateInsulinInput(context);
+
+              //     // Only proceed if there are no validation errors
+              //     if (_longActingError == null && _shortActingError == null && _insulinToCarbError == null && _correctionFactorError == null) {
+              //       // Step 2: Show the confirmation dialog and capture the result (true for Confirm, false for Cancel)
+              //       bool confirmed = await _showConfirmationDialog(context);
+
+              //       // If the user cancels the confirmation dialog, stop here
+              //       if (!confirmed) return;
+
+              //       // Step 3: Check if the user has agreed to the terms
+              //       if (!_isAgreedToTerms) {
+              //         _showTermsNotAgreedDialog(context);
+              //         return;
+              //       }
+
+              //       // Step 4: Proceed with signing up the user in Firebase Auth and Firestore
+              //       try {
+              //         User? user = await AuthService().signUpWithEmail(
+              //           email: widget.email.trim().toLowerCase(),
+              //           password: widget.password,
+              //           firstName: widget.firstName,
+              //           lastName: widget.lastName,
+              //           weight: double.parse(widget.weight),
+              //           height: double.parse(widget.height),
+              //           dateOfBirth: widget.selectedDate!,
+              //           dailyBasal: double.parse(_longActingController.text),
+              //           dailyBolus: double.parse(_shortActingController.text),
+              //           carbRatio: _insulinToCarbController.text.isNotEmpty 
+              //             ? double.parse(_insulinToCarbController.text) 
+              //             : double.parse((500 / (double.parse(_longActingController.text) + double.parse(_shortActingController.text))).toStringAsFixed(2)),
+              //           correctionRatio: _correctionFactorController.text.isNotEmpty 
+              //             ? double.parse(_correctionFactorController.text) 
+              //             : double.parse((1800 / (double.parse(_longActingController.text) + double.parse(_shortActingController.text))).toStringAsFixed(2)),
+              //           gender: widget.isMale ?? false,
+              //         );
+
+              //         // Step 5: Send email verification
+              //         if (user != null && !user.emailVerified) {
+
+              //           // Step 6: Show success dialog for email verification
+              //           _showEmailVerificationDialog(context);
+              //         }
+              //       } catch (e) {
+              //         // Step 7: Show error dialog if sign-up fails
+              //         _showErrorDialog(context, 'Sign-up failed', e.toString());
+              //       }
+              //     }
+              //   },
+              // ),
+
               CustomButton(
                 text: 'Create Account',
                 onPressed: () async {
@@ -1033,22 +1138,22 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   _validateInsulinInput(context);
 
                   // Only proceed if there are no validation errors
-                  if (_longActingError == null && _shortActingError == null && _insulinToCarbError == null && _correctionFactorError == null) {
-                    // Step 2: Show the confirmation dialog and capture the result (true for Confirm, false for Cancel)
+                  if (_longActingError == null && _shortActingError == null && 
+                      _insulinToCarbError == null && _correctionFactorError == null) {
+                    
+                    // Step 2: Show the confirmation dialog
                     bool confirmed = await _showConfirmationDialog(context);
-
-                    // If the user cancels the confirmation dialog, stop here
                     if (!confirmed) return;
 
-                    // Step 3: Check if the user has agreed to the terms
+                    // Step 3: Check terms agreement
                     if (!_isAgreedToTerms) {
                       _showTermsNotAgreedDialog(context);
                       return;
                     }
 
-                    // Step 4: Proceed with signing up the user in Firebase Auth and Firestore
                     try {
-                      await AuthService().signUpWithEmail(
+                      // Step 4: Create user account and store data
+                      User? user = await AuthService().signUpWithEmail(
                         email: widget.email.trim().toLowerCase(),
                         password: widget.password,
                         firstName: widget.firstName,
@@ -1060,22 +1165,32 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                         dailyBolus: double.parse(_shortActingController.text),
                         carbRatio: _insulinToCarbController.text.isNotEmpty 
                           ? double.parse(_insulinToCarbController.text) 
-                          : double.parse((500/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
+                          : double.parse((500 / (double.parse(_longActingController.text) + 
+                              double.parse(_shortActingController.text))).toStringAsFixed(2)),
                         correctionRatio: _correctionFactorController.text.isNotEmpty 
                           ? double.parse(_correctionFactorController.text) 
-                          : double.parse((1800/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
-                        gender: widget.isMale ?? false,  
+                          : double.parse((1800 / (double.parse(_longActingController.text) + 
+                              double.parse(_shortActingController.text))).toStringAsFixed(2)),
+                        gender: widget.isMale ?? false,
                       );
 
-                      // Step 5: Show success dialog and navigate to the Home page
-                      _showSuccessDialog(context);
+                      if (user != null) {
+                        // Step 5: Show verification dialog
+                        _showEmailVerificationDialog(context);
+                        // Navigate to login page after showing the dialog
+                        // Navigator.pushAndRemoveUntil(
+                        //   context,
+                        //   MaterialPageRoute(builder: (context) => logIn()),
+                        //   (Route<dynamic> route) => false,
+                        // );
+                      }
                     } catch (e) {
-                      // Step 4b: Show error dialog if sign-up fails
                       _showErrorDialog(context, 'Sign-up failed', e.toString());
                     }
                   }
                 },
               ),
+
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Center( 
@@ -1735,7 +1850,484 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
     );
   }
 
+  // void _showEmailVerificationDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(28.0),
+  //         ),
+  //         title: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Icon(
+  //               Icons.email,
+  //               color: Theme.of(context).colorScheme.primary,
+  //               size: 30,
+  //             ),
+  //             SizedBox(width: 10),
+  //             Text(
+  //               'Verify Your Email',
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               'A verification email has been sent to your email address. Please verify your email.',
+  //               style: TextStyle(fontSize: 16, color: Colors.black),
+  //               textAlign: TextAlign.center,
+  //             ),
+  //           ],
+  //         ),
+  //         actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+  //         actions: [
+  //           Center(
+  //             child: TextButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //                 Navigator.pushAndRemoveUntil(
+  //                   context,
+  //                   MaterialPageRoute(builder: (context) => MainNavigation()),
+  //                   (Route<dynamic> route) => false,
+  //                 );
+  //               },
+  //               style: TextButton.styleFrom(
+  //                 padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+  //                 backgroundColor: Theme.of(context).colorScheme.primary,
+  //                 foregroundColor: Colors.white,
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               ),
+  //               child: Text(
+  //                 'OK',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
+  // void _showEmailVerificationDialog(BuildContext context) async {
+  //   await showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(28.0),
+  //         ),
+  //         title: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Icon(
+  //               Icons.email,
+  //               color: Theme.of(context).colorScheme.primary,
+  //               size: 30,
+  //             ),
+  //             SizedBox(width: 10),
+  //             Text(
+  //               'Verifying Your Email',
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               'A verification email has been sent to your email address. Please verify your email before logging in.',
+  //               style: TextStyle(fontSize: 16, color: Colors.black),
+  //               textAlign: TextAlign.center,
+  //             ),
+  //           ],
+  //         ),
+  //         actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+  //         actions: [
+  //           Center(
+  //             child: TextButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //               },
+  //               style: TextButton.styleFrom(
+  //                 padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+  //                 backgroundColor: Theme.of(context).colorScheme.primary,
+  //                 foregroundColor: Colors.white,
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               ),
+  //               child: Text(
+  //                 'OK',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  // void _showEmailVerificationDialog(BuildContext context) async {
+  //   bool isVerified = false;
+  //   Timer? timer;
+
+  //   await showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       // Start a timer to check email verification status
+  //       timer = Timer.periodic(Duration(seconds: 90), (timer) async {
+  //         // Reload the user to get the latest status
+  //         await FirebaseAuth.instance.currentUser?.reload();
+  //         final user = FirebaseAuth.instance.currentUser;
+          
+  //         if (user?.emailVerified == true) {
+  //           timer.cancel();
+  //           isVerified = true;
+  //           Navigator.of(context).pop(); // Close verification dialog
+            
+  //           // Update the user's verification status in Firestore
+  //           await FirebaseFirestore.instance
+  //               .collection('users')
+  //               .doc(user?.uid)
+  //               .update({'isEmailVerified': true});
+
+  //           // Show success dialog
+  //           _showSuccessDialog(context);
+  //         }
+  //       });
+
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(28.0),
+  //         ),
+  //         title: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Icon(
+  //               Icons.email,
+  //               color: Theme.of(context).colorScheme.primary,
+  //               size: 30,
+  //             ),
+  //             SizedBox(width: 10),
+  //             Text(
+  //               'Verify Your Email',
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               'A verification email has been sent to your email address.\n\nPlease check your inbox and click the verification link.',
+  //               style: TextStyle(fontSize: 16, color: Colors.black),
+  //               textAlign: TextAlign.center,
+  //             ),
+  //             SizedBox(height: 20),
+  //             CircularProgressIndicator(),
+  //           ],
+  //         ),
+  //         actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+  //         actions: [
+  //           Center(
+  //             child: TextButton(
+  //               onPressed: () {
+  //                 timer?.cancel();
+  //                 Navigator.of(context).pop();
+  //                 Navigator.pushAndRemoveUntil(
+  //                   context,
+  //                   MaterialPageRoute(builder: (context) => logIn()),
+  //                   (Route<dynamic> route) => false,
+  //                 );
+  //               },
+  //               style: TextButton.styleFrom(
+  //                 padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+  //                 backgroundColor: Theme.of(context).colorScheme.primary,
+  //                 foregroundColor: Colors.white,
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               ),
+  //               child: Text(
+  //                 'Verify Later',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+
+  //   // Clean up timer if dialog is dismissed
+  //   timer?.cancel();
+
+  //   // If user didn't verify email, navigate to login
+  //   if (!isVerified) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => logIn()),
+  //       (Route<dynamic> route) => false,
+  //     );
+  //   }
+  // }
+
+  // void _showEmailVerificationDialog(BuildContext context) async { 
+  //   bool isVerified = false;
+  //   Timer? timer;
+
+  //   await showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       // Start a timer to check email verification status
+  //       timer = Timer.periodic(Duration(seconds: 5), (timer) async {
+  //         // Reload the user to get the latest status
+  //         await FirebaseAuth.instance.currentUser?.reload();
+  //         final user = FirebaseAuth.instance.currentUser;
+          
+  //         if (user?.emailVerified == true) {
+  //           timer.cancel();
+  //           isVerified = true;
+  //           Navigator.of(context).pop(); // Close verification dialog
+            
+  //           // Update the user's verification status in Firestore
+  //           await FirebaseFirestore.instance
+  //               .collection('users')
+  //               .doc(user?.uid)
+  //               .update({'isEmailVerified': true});
+
+  //           // Show success dialog
+  //           _showSuccessDialog(context);
+  //         }
+  //       });
+
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(28.0),
+  //         ),
+  //         title: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Icon(
+  //               Icons.email,
+  //               color: Theme.of(context).colorScheme.primary,
+  //               size: 30,
+  //             ),
+  //             SizedBox(width: 10),
+  //             Text(
+  //               'Verify Your Email',
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Theme.of(context).colorScheme.primary,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               'A verification email has been sent to your email address.\n\nPlease check your inbox and click the verification link.',
+  //               style: TextStyle(fontSize: 16, color: Colors.black),
+  //               textAlign: TextAlign.center,
+  //             ),
+  //             SizedBox(height: 20),
+  //             CircularProgressIndicator(),
+  //           ],
+  //         ),
+  //         actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+  //         actions: [
+  //           Center(
+  //             child: TextButton(
+  //               onPressed: () {
+  //                 timer?.cancel();
+  //                 Navigator.of(context).pop();
+  //                 Navigator.pushAndRemoveUntil(
+  //                   context,
+  //                   MaterialPageRoute(builder: (context) => logIn()),
+  //                   (Route<dynamic> route) => false,
+  //                 );
+  //               },
+  //               style: TextButton.styleFrom(
+  //                 padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+  //                 backgroundColor: Theme.of(context).colorScheme.primary,
+  //                 foregroundColor: Colors.white,
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               ),
+  //               child: Text(
+  //                 'Verify Later',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+
+  //   // Clean up timer if dialog is dismissed
+  //   timer?.cancel();
+
+  //   // If user didn't verify email, navigate to login
+  //   if (!isVerified) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => logIn()),
+  //       (Route<dynamic> route) => false,
+  //     );
+  //   }
+  // }
+
+  void _showEmailVerificationDialog(BuildContext context) async { 
+  bool isVerified = false;
+  Timer? timer;
+
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      // Start a timer to check email verification status
+      timer = Timer.periodic(Duration(seconds: 2), (timer) async {
+        try {
+          // Reload the user to get the latest status
+          await FirebaseAuth.instance.currentUser?.reload();
+          final user = FirebaseAuth.instance.currentUser;
+
+          print('Email verified: ${user?.emailVerified}');
+          
+          if (user?.emailVerified == true) {
+            timer.cancel(); // Stop the timer
+            isVerified = true;
+
+            //Navigator.of(context).pop(); // Close the verification dialog
+            
+            // Update the user's verification status in Firestore
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user?.uid)
+                .update({'isEmailVerified': true});
+            
+            print('Email verification status updated in Firestore.');
+
+            // Show success dialog
+            _showSuccessDialog(context);
+          }
+        } catch (e) {
+          print('Error checking email verification: $e');
+        }
+      });
+
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28.0),
+        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.email,
+              color: Theme.of(context).colorScheme.primary,
+              size: 30,
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Verify Your Email',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'A verification email has been sent to your email address.\n\nPlease check your inbox and click the verification link.',
+              style: TextStyle(fontSize: 16, color: Colors.black),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(),
+          ],
+        ),
+        actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () {
+                timer?.cancel();
+                Navigator.of(context).pop();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => logIn()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Verify Later',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  // Clean up timer if dialog is dismissed
+  timer?.cancel();
+
+  // If user didn't verify email, navigate to login
+  if (!isVerified) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => logIn()),
+      (Route<dynamic> route) => false,
+    );
+  }
+}
 
   Widget _buildInputField(
     BuildContext context, {

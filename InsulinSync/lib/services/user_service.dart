@@ -8,6 +8,7 @@ import 'package:firebase_database/firebase_database.dart' as firebase_database;
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import '../models/carbohydrate_model.dart';
+import '../models/contact_model.dart';
 import '../models/user_model.dart';
 import '../models/glucose_model.dart';
 import '../models/insulin_model.dart';
@@ -234,6 +235,7 @@ class UserService {
       // Check if the token and patientId fields exist
       final token = userDoc.data()?['token'];
       final patientId = userDoc.data()?['patientId'];
+      final accountId = userDoc.data()?['libreAccountId'];
 
       if (token == null || patientId == null) {
         _glucoseStreamController!.addError('-');
@@ -249,9 +251,10 @@ class UserService {
           'Cache-Control': 'no-cache',
           'connection': 'Keep-Alive',
           'content-type': 'application/json',
-          'version': '4.7.0',
+          'version': '4.12.0',
           'product': 'llu.android',
           "authorization": 'Bearer ${token}',
+          'Account-Id': '$accountId'
         };
 
         final response = await http.get(
@@ -283,7 +286,8 @@ class UserService {
 
             // Check if the time difference is within 2 minutes
             if (now.difference(parsedDate).inMinutes.abs() >= 2) {
-              _glucoseStreamController!.addError('-');
+              // Todo modify
+              _glucoseStreamController!.addError('check internet');
               _arrowStreamController!.addError('');
               return;
             }
@@ -324,7 +328,7 @@ class UserService {
     if (_glucoseTimer != null) {
       return; // Timer is already running
     }
-
+// TODO change to 10 seconds
     _glucoseTimer = Timer.periodic(Duration(seconds: 10), (_) {
       fetchCurrentGlucose(); // Fetch glucose every 30 seconds
     });
@@ -367,6 +371,7 @@ class UserService {
     // Check if the token and patientId fields exist
     final token = userDoc.data()?['token'];
     final patientId = userDoc.data()?['patientId'];
+    final accountId = userDoc.data()?['libreAccountId'];
 
     print('token $token patientid $patientId');
 
@@ -382,9 +387,10 @@ class UserService {
         'Cache-Control': 'no-cache',
         'connection': 'Keep-Alive',
         'content-type': 'application/json',
-        'version': '4.7.0',
+        'version': '4.12.0',
         'product': 'llu.android',
         "authorization": 'Bearer ${token}',
+        'Account-Id': '$accountId'
       };
 
       final response = await http.get(
@@ -405,9 +411,11 @@ class UserService {
             userDoc.data()?['cgm_data']?['periodic']?['time'];
 
         // Check if 'lastStoredTimeRaw' is null before calling '.toDate()'
-        final lastStoredTime = lastStoredTimeRaw != null
+        var lastStoredTime = lastStoredTimeRaw != null
             ? (lastStoredTimeRaw as Timestamp).toDate()
             : null;
+
+        lastStoredTime = null;
 
         final dateFormat = DateFormat('MM/dd/yyyy h:mm:ss a');
 
@@ -511,6 +519,7 @@ class UserService {
 
       final token = userDoc.data()?['token'];
       final patientId = userDoc.data()?['patientId'];
+      final accountId = userDoc.data()?['libreAccountId'];
 
       if (token == null || patientId == null) {
         _glucoseStreamController?.addError('-');
@@ -528,9 +537,10 @@ class UserService {
           'Cache-Control': 'no-cache',
           'connection': 'Keep-Alive',
           'content-type': 'application/json',
-          'version': '4.7.0',
+          'version': '4.12.0',
           'product': 'llu.android',
           "authorization": 'Bearer $token',
+          'Account-Id': '$accountId'
         };
 
         final response = await http.get(
@@ -556,6 +566,25 @@ class UserService {
 
   ///////////////////////
 
+  // Future<bool> addNote(Note note) async {
+  //   // Check if the currentUserId is null
+  //   if (currentUserId == null) {
+  //     return false; // Return false if user is not authenticated
+  //   }
+
+  //   try {
+  //     // Attempt to update the user's notes in Firestore
+  //     await _firestore.collection('users').doc(currentUserId).update({
+  //       'notes': FieldValue.arrayUnion([note.toMap()]),
+  //     });
+  //     return true; // Return true if the addition is successful
+  //   } catch (e) {
+  //     // Log the error or handle it as needed
+  //     print('Error adding note: $e');
+  //     return false; // Return false if there was an error
+  //   }
+  // }
+
   Future<bool> addNote(Note note) async {
     // Check if the currentUserId is null
     if (currentUserId == null) {
@@ -563,10 +592,17 @@ class UserService {
     }
 
     try {
-      // Attempt to update the user's notes in Firestore
-      await _firestore.collection('users').doc(currentUserId).update({
-        'notes': FieldValue.arrayUnion([note.toMap()]),
-      });
+      // Reference to the notes sub-collection for the current user
+      final noteRef = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('notes')
+          .doc(); // Auto-generate an ID for the note
+
+      // Assign the auto-generated ID to the note object (optional)
+
+      // Add the note document to Firestore
+      await noteRef.set(note.toMap());
       return true; // Return true if the addition is successful
     } catch (e) {
       // Log the error or handle it as needed
@@ -575,38 +611,102 @@ class UserService {
     }
   }
 
+// Future<List<Note>> getNotes() async {
+//     if (currentUserId == null) {
+//       return [];
+//     }
+
+//     var result = await Connectivity().checkConnectivity();
+//     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
+//     var options = null;
+//     if (!hasInternetConnection) {
+//       options = GetOptions(source: Source.cache);
+//     }
+
+//     try {
+//       DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+//           .instance
+//           .collection('users')
+//           .doc(currentUserId)
+//           .get(options);
+
+//       if (snapshot.exists &&
+//           snapshot.data() != null &&
+//           snapshot.data()!.containsKey('notes')) {
+//         List<dynamic> notes = snapshot['notes'] ?? [];
+//         return notes.map((map) => Note.fromMap(map)).toList();
+//       } else {
+//         return [];
+//       }
+//     } catch (e) {
+//       print('Error getting notes: $e');
+//       return [];
+//     }
+//   }
+
   Future<List<Note>> getNotes() async {
     if (currentUserId == null) {
-      return [];
+      return []; // Return an empty list if the user is not authenticated
     }
 
+    // Check internet connectivity
     var result = await Connectivity().checkConnectivity();
-    bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    bool hasInternetConnection = result != ConnectivityResult.none;
+
+    // Set Firestore options to use cache if no internet connection
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
     try {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-          .instance
+      // Fetch notes from the 'notes' sub-collection
+      final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUserId)
+          .collection('notes')
           .get(options);
 
-      if (snapshot.exists &&
-          snapshot.data() != null &&
-          snapshot.data()!.containsKey('notes')) {
-        List<dynamic> notes = snapshot['notes'] ?? [];
-        return notes.map((map) => Note.fromMap(map)).toList();
-      } else {
-        return [];
-      }
+      // Map the fetched documents to a list of Note objects
+      return querySnapshot.docs
+          .map((doc) => Note.fromMap(doc.data()
+            ..['id'] = doc.id)) // Add the document ID to the note if needed
+          .toList();
     } catch (e) {
       print('Error getting notes: $e');
-      return [];
+      return []; // Return an empty list if there was an error
     }
   }
+
+// Stream<List<Note>> getNotesStream() {
+//     if (currentUserId == null) {
+//       // Return a stream that emits an empty list when there's no user
+//       return Stream.value(<Note>[]);
+//     }
+
+//     return _firestore
+//         .collection('users')
+//         .doc(currentUserId)
+//         .snapshots()
+//         .map((snapshot) {
+//       try {
+//         // Attempt to get data from the snapshot
+//         final data = snapshot.data();
+
+//         // If 'notes' field is missing or not a List, return an empty list
+//         if (data == null || data['notes'] == null || data['notes'] is! List) {
+//           return <Note>[];
+//         }
+
+//         // Safely map the 'notes' field to a list of Note objects
+//         List<dynamic> notes = data['notes'];
+//         return notes
+//             .map((map) => Note.fromMap(map as Map<String, dynamic>))
+//             .toList();
+//       } catch (e) {
+//         // If any error occurs, return an empty list
+//         return <Note>[];
+//       }
+//     });
+//   }
 
   Stream<List<Note>> getNotesStream() {
     if (currentUserId == null) {
@@ -614,28 +714,22 @@ class UserService {
       return Stream.value(<Note>[]);
     }
 
+    // Stream notes from the 'notes' sub-collection
     return _firestore
         .collection('users')
         .doc(currentUserId)
+        .collection('notes')
         .snapshots()
-        .map((snapshot) {
+        .map((querySnapshot) {
       try {
-        // Attempt to get data from the snapshot
-        final data = snapshot.data();
-
-        // If 'notes' field is missing or not a List, return an empty list
-        if (data == null || data['notes'] == null || data['notes'] is! List) {
-          return <Note>[];
-        }
-
-        // Safely map the 'notes' field to a list of Note objects
-        List<dynamic> notes = data['notes'];
-        return notes
-            .map((map) => Note.fromMap(map as Map<String, dynamic>))
+        // Map each document in the snapshot to a Note object
+        return querySnapshot.docs
+            .map((doc) => Note.fromMap(
+                doc.data()..['id'] = doc.id)) // Include the document ID
             .toList();
       } catch (e) {
-        // If any error occurs, return an empty list
-        return <Note>[];
+        print('Error processing notes stream: $e');
+        return <Note>[]; // Return an empty list if there's an error
       }
     });
   }
@@ -669,15 +763,18 @@ class UserService {
   /////////////////
 
   Future<bool> addInsulinDosage(InsulinDosage dosage) async {
-    if (currentUserId == null)
+    if (currentUserId == null) {
       return false; // Return false if currentUserId is null
+    }
     try {
-      await _firestore.collection('users').doc(currentUserId).update({
-        'insulin_dosages': FieldValue.arrayUnion([dosage.toMap()]),
-      });
+      // Add the insulin dosage as a new document in the 'insulin_dosages' sub-collection
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('insulin_dosages')
+          .add(dosage.toMap());
       return true; // Return true if the operation was successful
     } catch (e) {
-      // Handle the error if needed (e.g., logging)
       print('Error adding insulin dosage: $e');
       return false; // Return false if there was an error
     }
@@ -690,26 +787,20 @@ class UserService {
 
     var result = await Connectivity().checkConnectivity();
     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
     try {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-          .instance
+      // Fetch all documents in the 'insulin_dosages' sub-collection
+      final querySnapshot = await _firestore
           .collection('users')
           .doc(currentUserId)
+          .collection('insulin_dosages')
           .get(options);
 
-      if (!snapshot.exists ||
-          snapshot.data() == null ||
-          !snapshot.data()!.containsKey('insulin_dosages')) {
-        return [];
-      }
-
-      List<dynamic> insulinDosages = snapshot['insulin_dosages'] ?? [];
-      return insulinDosages.map((map) => InsulinDosage.fromMap(map)).toList();
+      return querySnapshot.docs
+          .map((doc) => InsulinDosage.fromMap(doc.data()..['id'] = doc.id))
+          .toList();
     } catch (e) {
       print('Error fetching insulin dosages: $e');
       return [];
@@ -722,29 +813,20 @@ class UserService {
       return Stream.value(<InsulinDosage>[]);
     }
 
+    // Stream documents from the 'insulin_dosages' sub-collection
     return _firestore
         .collection('users')
         .doc(currentUserId)
+        .collection('insulin_dosages')
         .snapshots()
-        .map((snapshot) {
+        .map((querySnapshot) {
       try {
-        // Attempt to get data from the snapshot
-        final data = snapshot.data();
-
-        // If 'notes' field is missing or not a List, return an empty list
-        if (data == null ||
-            data['insulin_dosages'] == null ||
-            data['insulin_dosages'] is! List) {
-          return <InsulinDosage>[];
-        }
-
-        // Safely map the 'notes' field to a list of Note objects
-        List<dynamic> dosages = data['insulin_dosages'];
-        return dosages
-            .map((map) => InsulinDosage.fromMap(map as Map<String, dynamic>))
+        // Map each document in the snapshot to an InsulinDosage object
+        return querySnapshot.docs
+            .map((doc) => InsulinDosage.fromMap(doc.data()..['id'] = doc.id))
             .toList();
       } catch (e) {
-        // If any error occurs, return an empty list
+        print('Error processing insulin dosages stream: $e');
         return <InsulinDosage>[];
       }
     });
@@ -761,23 +843,24 @@ class UserService {
 
     final Map<String, dynamic> updates = {};
 
-    if (newType != null) {
-      updates['type'] = newType;
-    }
-    if (newDosage != null) {
-      updates['dosage'] = newDosage;
-    }
-    if (newTime != null) {
-      updates['time'] = newTime.toIso8601String();
-    }
-    if (newGlucoseAtTime != null) {
+    if (newType != null) updates['type'] = newType;
+    if (newDosage != null) updates['dosage'] = newDosage;
+    if (newTime != null) updates['time'] = newTime.toIso8601String();
+    if (newGlucoseAtTime != null)
       updates['glucoseAtTime'] = newGlucoseAtTime.toMap();
-    }
 
     if (updates.isNotEmpty) {
-      await _database
-          .child('users/$currentUserId/insulin_dosages/$dosageId')
-          .update(updates);
+      try {
+        // Update the specific document in the 'insulin_dosages' sub-collection
+        await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('insulin_dosages')
+            .doc(dosageId)
+            .update(updates);
+      } catch (e) {
+        print('Error updating insulin dosage: $e');
+      }
     }
   }
 
@@ -788,7 +871,7 @@ class UserService {
       return 0.0;
     }
 
-    double dosages = 0.0;
+    double totalDosages = 0.0;
 
     DateTime today = DateTime.now();
     DateTime startOfDay = DateTime(today.year, today.month, today.day);
@@ -796,12 +879,13 @@ class UserService {
 
     for (InsulinDosage dosage in insulinList) {
       if (dosage.time.isAfter(startOfDay) && dosage.time.isBefore(endOfDay)) {
-        if (dosage.type.toLowerCase() == type.toLowerCase())
-          dosages += dosage.dosage;
+        if (dosage.type.toLowerCase() == type.toLowerCase()) {
+          totalDosages += dosage.dosage;
+        }
       }
     }
 
-    return dosages;
+    return totalDosages;
   }
 
   //////////////////
@@ -810,11 +894,18 @@ class UserService {
     if (currentUserId == null) return false;
 
     try {
-      await _firestore.collection('users').doc(currentUserId).update({
-        'workouts': FieldValue.arrayUnion([workout.toMap()]),
-      });
-      return true; // Return true if the update is successful
+      // TODO remove
+      print("addWorkout 1");
+      // Add the workout as a new document in the 'workouts' sub-collection
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('workouts')
+          .add(workout.toMap());
+      print("addWorkout 2");
+      return true; // Return true if the operation was successful
     } catch (e) {
+      print("addWorkout 3");
       print('Error adding workout: $e');
       return false; // Return false if there's an error
     }
@@ -822,31 +913,25 @@ class UserService {
 
   Future<List<Workout>> getWorkouts() async {
     if (currentUserId == null) {
-      // Return an empty list if currentUserId is null
       return [];
     }
 
     var result = await Connectivity().checkConnectivity();
     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
     try {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-          .instance
+      // Fetch all documents in the 'workouts' sub-collection
+      final querySnapshot = await _firestore
           .collection('users')
           .doc(currentUserId)
+          .collection('workouts')
           .get(options);
 
-      if (!snapshot.exists) {
-        return [];
-      }
-
-      List<dynamic> workouts = snapshot.data()?['workouts'] ?? [];
-
-      return workouts.map((map) => Workout.fromMap(map)).toList();
+      return querySnapshot.docs
+          .map((doc) => Workout.fromMap(doc.data()..['id'] = doc.id))
+          .toList();
     } catch (e) {
       print('Error fetching workouts: $e');
       return [];
@@ -859,29 +944,20 @@ class UserService {
       return Stream.value(<Workout>[]);
     }
 
+    // Stream documents from the 'workouts' sub-collection
     return _firestore
         .collection('users')
         .doc(currentUserId)
+        .collection('workouts')
         .snapshots()
-        .map((snapshot) {
+        .map((querySnapshot) {
       try {
-        // Attempt to get data from the snapshot
-        final data = snapshot.data();
-
-        // If 'notes' field is missing or not a List, return an empty list
-        if (data == null ||
-            data['workouts'] == null ||
-            data['workouts'] is! List) {
-          return <Workout>[];
-        }
-
-        // Safely map the 'notes' field to a list of Note objects
-        List<dynamic> workouts = data['workouts'];
-        return workouts
-            .map((map) => Workout.fromMap(map as Map<String, dynamic>))
+        // Map each document in the snapshot to a Workout object
+        return querySnapshot.docs
+            .map((doc) => Workout.fromMap(doc.data()..['id'] = doc.id))
             .toList();
       } catch (e) {
-        // If any error occurs, return an empty list
+        print('Error processing workouts stream: $e');
         return <Workout>[];
       }
     });
@@ -893,10 +969,13 @@ class UserService {
     if (currentUserId == null) return false; // Return false if user ID is null
 
     try {
-      await _firestore.collection('users').doc(currentUserId).update({
-        'carbohydrates': FieldValue.arrayUnion([carbohydrate.toMap()]),
-      });
-      return true; // Return true if the update is successful
+      // Add the carbohydrate as a new document in the 'carbohydrates' sub-collection
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('carbohydrates')
+          .add(carbohydrate.toMap());
+      return true; // Return true if the operation was successful
     } catch (e) {
       print('Error adding carbohydrate: $e');
       return false; // Return false if there's an error
@@ -904,22 +983,29 @@ class UserService {
   }
 
   Future<List<Carbohydrate>> getCarbohydrates() async {
+    if (currentUserId == null)
+      return []; // Return empty list if user ID is null
+
     var result = await Connectivity().checkConnectivity();
     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
-    DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await _firestore.collection('users').doc(currentUserId).get(options);
+    try {
+      // Fetch all documents in the 'carbohydrates' sub-collection
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('carbohydrates')
+          .get(options);
 
-    if (!snapshot.exists || !snapshot.data()!.containsKey('carbohydrates')) {
+      return querySnapshot.docs
+          .map((doc) => Carbohydrate.fromMap(doc.data()..['id'] = doc.id))
+          .toList();
+    } catch (e) {
+      print('Error fetching carbohydrates: $e');
       return [];
     }
-
-    List<dynamic> carbohydrates = snapshot['carbohydrates'] ?? [];
-    return carbohydrates.map((map) => Carbohydrate.fromMap(map)).toList();
   }
 
   Stream<List<Carbohydrate>> getCarbohydratesStream() {
@@ -928,29 +1014,20 @@ class UserService {
       return Stream.value(<Carbohydrate>[]);
     }
 
+    // Stream documents from the 'carbohydrates' sub-collection
     return _firestore
         .collection('users')
         .doc(currentUserId)
+        .collection('carbohydrates')
         .snapshots()
-        .map((snapshot) {
+        .map((querySnapshot) {
       try {
-        // Attempt to get data from the snapshot
-        final data = snapshot.data();
-
-        // If 'notes' field is missing or not a List, return an empty list
-        if (data == null ||
-            data['carbohydrates'] == null ||
-            data['carbohydrates'] is! List) {
-          return <Carbohydrate>[];
-        }
-
-        // Safely map the 'notes' field to a list of Note objects
-        List<dynamic> carbs = data['carbohydrates'];
-        return carbs
-            .map((map) => Carbohydrate.fromMap(map as Map<String, dynamic>))
+        // Map each document in the snapshot to a Carbohydrate object
+        return querySnapshot.docs
+            .map((doc) => Carbohydrate.fromMap(doc.data()..['id'] = doc.id))
             .toList();
       } catch (e) {
-        // If any error occurs, return an empty list
+        print('Error processing carbohydrates stream: $e');
         return <Carbohydrate>[];
       }
     });
@@ -989,72 +1066,92 @@ class UserService {
     }
 
     try {
-      await _firestore.collection('users').doc(currentUserId).update({
-        'meals': FieldValue.arrayUnion([meal.toMap()]),
-      });
+      // Add the meal with an array of references to 'foodItems' sub-collection documents
+      var mealRef = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('meals')
+          .add(meal.toMap());
+
+      // If foodItems are provided, add them to the 'foodItems' sub-collection
+      for (var foodItem in meal.foodItems) {
+        await mealRef.collection('foodItems').add(foodItem.toMap());
+      }
+
       return true; // Return true if the operation was successful
     } catch (e) {
-      // Handle the error if needed (e.g., logging)
       print('Error adding meal: $e');
       return false; // Return false if there was an error
     }
   }
 
   Future<List<meal>> getMeal() async {
+    if (currentUserId == null)
+      return []; // Return empty list if currentUserId is null
+
     var result = await Connectivity().checkConnectivity();
     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
-    DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await _firestore.collection('users').doc(currentUserId).get(options);
+    try {
+      // Fetch all meals from the 'meals' sub-collection
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('meals')
+          .get(options);
 
-    if (!snapshot.exists ||
-        snapshot.data() == null ||
-        !snapshot.data()!.containsKey('meals')) {
+      List<meal> mealsList = [];
+      for (var doc in querySnapshot.docs) {
+        // Fetch foodItems for each meal document from its own 'foodItems' sub-collection
+        final foodItemsSnapshot =
+            await doc.reference.collection('foodItems').get();
+        List<foodItem> foodItems = foodItemsSnapshot.docs
+            .map((foodDoc) =>
+                foodItem.fromMap(foodDoc.data() as Map<String, dynamic>))
+            .toList();
+
+        // Add the meal with its food items to the list
+        mealsList.add(meal.fromMap(doc.data() as Map<String, dynamic>));
+      }
+
+      return mealsList;
+    } catch (e) {
+      print('Error fetching meals: $e');
       return [];
     }
-
-    List<dynamic> mealsData = snapshot.data()!['meals'] ?? [];
-    return mealsData
-        .map((mealData) => meal.fromMap(mealData as Map<String, dynamic>))
-        .toList();
   }
 
-  Stream<List<meal>> getMealStream() {
+  Stream<List<meal>> getMealStream() async* {
     if (currentUserId == null) {
-      // Return a stream that emits an empty list when there's no user
-      return Stream.value(<meal>[]);
+      yield <meal>[]; // Return an empty list when there's no user
+      return;
     }
 
-    return _firestore
+    // Listen to the changes in the 'meals' collection
+    await for (var querySnapshot in _firestore
         .collection('users')
         .doc(currentUserId)
-        .snapshots()
-        .map((snapshot) {
-      try {
-        // Safely access the snapshot data
-        final data = snapshot.data();
+        .collection('meals')
+        .snapshots()) {
+      List<meal> mealsList = [];
 
-        // Check if data exists and 'meals' field is valid
-        if (data == null ||
-            !data.containsKey('meals') ||
-            data['meals'] is! List) {
-          return <meal>[]; // Return an empty list if 'meals' is missing or invalid
-        }
-
-        // Map the 'meals' field to a list of meal objects
-        List<dynamic> meals = data['meals'];
-        return meals
-            .map((mealData) => meal.fromMap(mealData as Map<String, dynamic>))
+      for (var doc in querySnapshot.docs) {
+        // Fetch foodItems for each meal document from its own 'foodItems' sub-collection
+        final foodItemsSnapshot =
+            await doc.reference.collection('foodItems').get();
+        List<foodItem> foodItems = foodItemsSnapshot.docs
+            .map((foodDoc) =>
+                foodItem.fromMap(foodDoc.data() as Map<String, dynamic>))
             .toList();
-      } catch (e) {
-        // Handle any errors gracefully and return an empty list
-        return <meal>[];
+
+        // Add the meal with its food items to the list
+        mealsList.add(meal.fromMap(doc.data() as Map<String, dynamic>));
       }
-    });
+
+      yield mealsList; // Yield the updated list of meals
+    }
   }
 
   Future<Map<String, double>> getTotalMeal({bool onlyToday = true}) async {
@@ -1079,7 +1176,6 @@ class UserService {
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
 
     for (meal currentMeal in mealsList) {
-      // Use a different variable name like `currentMeal`
       if (onlyToday) {
         if (currentMeal.time.isAfter(startOfDay) &&
             currentMeal.time.isBefore(endOfDay)) {
@@ -1107,6 +1203,79 @@ class UserService {
       "totalCal": totalCal,
     };
   }
+
+//////////////////
+// Add a contact to the Firestore database
+  Future<bool> addContact(Contact contact) async {
+    if (currentUserId == null) return false; // Return false if user ID is null
+
+    try {
+      // Add the contact as a new document in the 'contacts' sub-collection
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('contacts')
+          .add(contact.toMap());
+      return true; // Return true if the operation was successful
+    } catch (e) {
+      print('Error adding contact: $e');
+      return false; // Return false if there's an error
+    }
+  }
+
+// Fetch all contacts from the Firestore database
+  Future<List<Contact>> getContacts() async {
+    if (currentUserId == null)
+      return []; // Return an empty list if user ID is null
+
+    var result = await Connectivity().checkConnectivity();
+    bool hasInternetConnection = !result.contains(ConnectivityResult.none);
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
+
+    try {
+      // Fetch all documents in the 'contacts' sub-collection
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('contacts')
+          .get(options);
+
+      return querySnapshot.docs
+          .map((doc) => Contact.fromMap(doc.data()..['id'] = doc.id))
+          .toList();
+    } catch (e) {
+      print('Error fetching contacts: $e');
+      return [];
+    }
+  }
+
+// Stream contacts in real-time from Firestore
+  Stream<List<Contact>> getContactsStream() {
+    if (currentUserId == null) {
+      // Return a stream that emits an empty list if user ID is null
+      return Stream.value(<Contact>[]);
+    }
+
+    // Stream documents from the 'contacts' sub-collection
+    return _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('contacts')
+        .snapshots()
+        .map((querySnapshot) {
+      try {
+        // Map each document in the snapshot to a Contact object
+        return querySnapshot.docs
+            .map((doc) => Contact.fromMap(doc.data()..['id'] = doc.id))
+            .toList();
+      } catch (e) {
+        print('Error processing contacts stream: $e');
+        return <Contact>[];
+      }
+    });
+  }
+
 //////////////////
 
   Future<dynamic> getUserAttribute(String attribute) async {
@@ -1161,15 +1330,20 @@ class UserService {
   }
 
   Future<bool> updateUserAttributes({
+    String? firstName,
+    String? lastName,
+    String? email,
     double? weight,
     double? height,
     bool? gender,
+    DateTime? dateOfBirth,
     double? dailyBolus,
     double? dailyBasal,
     double? carbRatio,
     double? correctionRatio,
     String? libreEmail,
     String? libreName,
+    String? libreAccountId,
     String? patientId,
     String? token,
     int? minRange,
@@ -1181,9 +1355,14 @@ class UserService {
     final Map<String, dynamic> updates = {};
 
     // Add fields to the update map if not null
+    if (firstName != null) updates['firstName'] = firstName;
+    if (lastName != null) updates['lastName'] = lastName;
+    if (email != null) updates['email'] = email;
     if (weight != null) updates['weight'] = weight;
     if (height != null) updates['height'] = height;
     if (gender != null) updates['gender'] = gender;
+    if (dateOfBirth != null)
+      updates['dateOfBirth'] = Timestamp.fromDate(dateOfBirth);
     if (dailyBolus != null) updates['dailyBolus'] = dailyBolus;
     if (dailyBasal != null) updates['dailyBasal'] = dailyBasal;
     if (carbRatio != null) updates['carbRatio'] = carbRatio;
@@ -1191,6 +1370,7 @@ class UserService {
     if (libreEmail != null) updates['libreEmail'] = libreEmail;
     if (libreName != null) updates['libreName'] = libreName;
     if (patientId != null) updates['patientId'] = patientId;
+    if (libreAccountId != null) updates['libreAccountId'] = libreAccountId;
     if (token != null) updates['token'] = token;
     if (minRange != null) updates['minRange'] = minRange;
     if (maxRange != null) updates['maxRange'] = maxRange;
@@ -1228,6 +1408,7 @@ class UserService {
       bool? removeCarbRatio,
       bool? removeCorrectionRatio,
       bool? removeLibreEmail,
+      bool? removeLibreAccountId,
       bool? removeLibreName,
       bool? removePatientId,
       bool? removeToken,
@@ -1251,6 +1432,8 @@ class UserService {
     if (removeLibreEmail == true) updates['libreEmail'] = FieldValue.delete();
     if (removeLibreName == true) updates['libreName'] = FieldValue.delete();
     if (removePatientId == true) updates['patientId'] = FieldValue.delete();
+    if (removeLibreAccountId == true)
+      updates['libreAccountId'] = FieldValue.delete();
     if (removeToken == true) updates['token'] = FieldValue.delete();
     if (removeMinRange == true) updates['minRange'] = FieldValue.delete();
     if (removeMaxRange == true) updates['maxRange'] = FieldValue.delete();

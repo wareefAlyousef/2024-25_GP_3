@@ -20,6 +20,52 @@ class AuthService {
     }
   }
 
+  // // Sign up and store user in Firestore
+  // Future<User?> signUpWithEmail({
+  //   required String email,
+  //   required String password,
+  //   required String firstName,
+  //   required String lastName,
+  //   required double weight,
+  //   required double height,
+  //   required DateTime dateOfBirth,
+  //   required double dailyBasal,
+  //   required double dailyBolus,
+  //   required bool gender, 
+  //   double? carbRatio,
+  //   double? correctionRatio,
+  // }) async {
+  //   try {
+      
+  //     UserCredential result = await _auth.createUserWithEmailAndPassword(
+  //       email: email.trim().toLowerCase(),
+  //       password: password,
+  //     );
+  //     User? user = result.user;
+
+  //     await _firestore.collection('users').doc(user?.uid).set({
+  //       'firstName': firstName,
+  //       'lastName': lastName,
+  //       'email': email.trim().toLowerCase(),
+  //       'weight': weight,
+  //       'height': height,
+  //       'dateOfBirth': dateOfBirth.toIso8601String(),
+  //       'gender':
+  //           gender ? 'Male' : 'Female', 
+  //       'dailyBasal': dailyBasal,
+  //       'dailyBolus': dailyBolus,
+  //       'carbRatio': carbRatio,
+  //       'correctionRatio': correctionRatio,
+  //       'createdAt': Timestamp.now(),
+  //     });
+
+  //     return user;
+  //   } catch (e) {
+  //     print('Error during sign up: $e');
+  //     throw e;
+  //   }
+  // }
+
   // Sign up and store user in Firestore
   Future<User?> signUpWithEmail({
     required String email,
@@ -31,33 +77,39 @@ class AuthService {
     required DateTime dateOfBirth,
     required double dailyBasal,
     required double dailyBolus,
-    required bool gender, 
+    required bool gender,
     double? carbRatio,
     double? correctionRatio,
   }) async {
     try {
-      
+      // Create user with email and password
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.trim().toLowerCase(),
         password: password,
       );
       User? user = result.user;
 
-      await _firestore.collection('users').doc(user?.uid).set({
-        'firstName': firstName,
-        'lastName': lastName,
-        'email': email.trim().toLowerCase(),
-        'weight': weight,
-        'height': height,
-        'dateOfBirth': dateOfBirth.toIso8601String(),
-        'gender':
-            gender ? 'Male' : 'Female', 
-        'dailyBasal': dailyBasal,
-        'dailyBolus': dailyBolus,
-        'carbRatio': carbRatio,
-        'correctionRatio': correctionRatio,
-        'createdAt': Timestamp.now(),
-      });
+      if (user != null) {
+        // Send email verification
+        await user.sendEmailVerification();
+
+        // Store user data in Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          'firstName': firstName,
+          'lastName': lastName,
+          'email': email.trim().toLowerCase(),
+          'weight': weight,
+          'height': height,
+          'dateOfBirth': dateOfBirth.toIso8601String(),
+          'gender': gender ? 'Male' : 'Female',
+          'dailyBasal': dailyBasal,
+          'dailyBolus': dailyBolus,
+          'carbRatio': carbRatio,
+          'correctionRatio': correctionRatio,
+          'createdAt': Timestamp.now(),
+          'isEmailVerified': false, // Track email verification status
+        });
+      }
 
       return user;
     } catch (e) {
@@ -101,4 +153,5 @@ class AuthService {
       throw e;
     }
   }
+
 }

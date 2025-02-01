@@ -5,8 +5,8 @@ import 'insulin_model.dart';
 import 'note_model.dart';
 import 'workout_model.dart';
 import 'meal_model.dart';
+import 'contact_model.dart'; // Import the Contact class
 
-// Not sure what is optional, will be modified
 class UserModel {
   String firstName;
   String lastName;
@@ -19,14 +19,16 @@ class UserModel {
   double dailyBasal;
   double? carbRatio;
   double? correctionRatio;
-  String? patientId, token, libreEmail;
+  String? patientId, token, libreEmail, libreAccountId;
   int? minRange, maxRange;
+  bool? recieveNotifications;
   List<GlucoseReading>? glucoseReadings;
   List<double>? carbohydrates;
   List<Note>? notes;
   List<InsulinDosage>? insulinDosages;
   List<Workout>? workouts;
   List<meal>? meals;
+  List<Contact>? emergencyContacts;
 
   UserModel({
     required this.firstName,
@@ -43,6 +45,7 @@ class UserModel {
     this.patientId,
     this.token,
     this.libreEmail,
+    this.libreAccountId,
     this.minRange,
     this.maxRange,
     this.glucoseReadings,
@@ -51,6 +54,7 @@ class UserModel {
     this.insulinDosages,
     this.workouts,
     this.meals,
+    this.emergencyContacts, // Initialize emergencyContacts
   });
 
   factory UserModel.fromMap(Map<dynamic, dynamic> map) {
@@ -69,6 +73,7 @@ class UserModel {
       patientId: map['patientId'] as String?,
       token: map['token'] as String?,
       libreEmail: map['libreEmail'] as String?,
+      libreAccountId: map['libreAccountId'] as String?,
       minRange: map['minRange'] as int?,
       maxRange: map['maxRange'] as int?,
       glucoseReadings: map['glucoseReadings'] != null
@@ -96,11 +101,16 @@ class UserModel {
               .map((item) => Workout.fromMap(item as Map<String, dynamic>))
               .toList()
           : [],
-      //meals: map['meals'] != null
-      //    ? (map['meals'] as List<dynamic>)
-      //        .map((item) => meal.fromMap(item as Map<String, dynamic>))
-        //      .toList()
-          //: [],
+      meals: map['meals'] != null
+          ? (map['meals'] as List<dynamic>)
+              .map((item) => meal.fromMap(item as Map<String, dynamic>))
+              .toList()
+          : [],
+      emergencyContacts: map['emergencyContacts'] != null
+          ? (map['emergencyContacts'] as List<dynamic>)
+              .map((item) => Contact.fromMap(item as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 
@@ -120,6 +130,7 @@ class UserModel {
       'patientId': patientId,
       'token': token,
       'libreEmail': libreEmail,
+      'libreAccountId': libreAccountId,
       'minRange': minRange,
       'maxRange': maxRange,
       'glucoseReadings':
@@ -130,6 +141,8 @@ class UserModel {
           insulinDosages?.map((dosage) => dosage.toMap()).toList(),
       'workouts': workouts?.map((workout) => workout.toMap()).toList(),
       'meals': meals?.map((meal) => meal.toMap()).toList(),
+      'emergencyContacts':
+          emergencyContacts?.map((contact) => contact.toMap()).toList(),
     };
   }
 }

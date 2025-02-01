@@ -9,13 +9,15 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'models/foodItem_model.dart';
 import 'addnNutrition.dart';
-import 'Cart.dart'; 
+import 'Cart.dart';
 import 'MainNavigation.dart';
 
 class AddBySearch extends StatefulWidget {
-  final List<foodItem>? mealItems; // Optional meal items array, now a list of foodItem objects
+  final List<foodItem>?
+      mealItems; // Optional meal items array, now a list of foodItem objects
 
-  const AddBySearch({super.key, this.mealItems}); // Accept mealItems as an optional parameter
+  const AddBySearch(
+      {super.key, this.mealItems}); // Accept mealItems as an optional parameter
 
   @override
   State<AddBySearch> createState() => _AddBySearch();
@@ -50,7 +52,7 @@ class _AddBySearch extends State<AddBySearch> {
     });
 
     try {
-      final List<foodItem> results = await searchFood1(query); 
+      final List<foodItem> results = await searchFood1(query);
       setState(() {
         _foodDetails = results; // Assign results to _foodDetails
         _isLoading = false; // Stop the loading spinner
@@ -62,11 +64,17 @@ class _AddBySearch extends State<AddBySearch> {
       print('Error: $e'); // Log the error
     }
   }
+
   // Barcode Scan method
-   Future<void> _scanBarcode() async {
+  Future<void> _scanBarcode() async {
     String scanRes;
     try {
-      scanRes = await FlutterBarcodeScanner.scanBarcode( "#023B96", "Cancel",  true, ScanMode.DEFAULT, );
+      scanRes = await FlutterBarcodeScanner.scanBarcode(
+        "#023B96",
+        "Cancel",
+        true,
+        ScanMode.DEFAULT,
+      );
     } catch (error) {
       scanRes = 'Failed to scan:';
     }
@@ -75,167 +83,169 @@ class _AddBySearch extends State<AddBySearch> {
 
     setState(() {
       // scan is  done
-       if (scanRes != '-1' && scanRes != 'Failed to scan:' ) {
-        //succefull scan 
-         _scanResult = scanRes; // item code
+      if (scanRes != '-1' && scanRes != 'Failed to scan:') {
+        //succefull scan
+        _scanResult = scanRes; // item code
         NutritionalData(_scanResult);
-
-      }else {
-      //scan canceled 
+      } else {
+        //scan canceled
       }
-      
     });
   }
 
   // call nutrions API method
   Future<void> NutritionalData(String barcode) async {
-  final String apiUrl = 'https://world.openfoodfacts.org/api/v0/product/$barcode.json';
+    final String apiUrl =
+        'https://world.openfoodfacts.org/api/v0/product/$barcode.json';
 
-  try {
-    
-    final response = await http.get(Uri.parse(apiUrl));
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
 
-    if (response.statusCode == 200) {
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
 
-      final Map<String, dynamic> data = json.decode(response.body);
-   
+        if (data['product'] != null && data['product']['nutriments'] != null) {
+          var product = data['product'];
+          var nutrients = product['nutriments'];
+          if (nutrients['carbohydrates_100g'] == null ||
+              nutrients['energy-kcal_100g'] == null ||
+              nutrients['fat_100g'] == null ||
+              nutrients['proteins_100g'] == null) {
+            showErrorDialog(
+                "Nutritional data for this product is not available.");
+          } else {
+            // nutritional data
 
-      if (data['product'] != null && data['product']['nutriments'] != null) {
-         var product = data['product'];
-         var nutrients = product['nutriments'];
-        if (  nutrients['carbohydrates_100g'] == null || nutrients['energy-kcal']== null  || nutrients['fat']== null  || nutrients['proteins'] == null  ){
-
-         showErrorDialog("Nutritional data for this product is not available.");
-        }else{
-        // nutritional data
-       
-        var Name = product['product_name'] ?? 'Name is unavailable';
-        var nutrients = product['nutriments']; 
-        var carbohydrates = (nutrients['carbohydrates_100g'] as num?)?.toDouble() ?? 0.0;
-        var calorie = (nutrients['energy-kcal'] as num?)?.toDouble() ?? 0.0;
-        var fat = (nutrients['fat'] as num?)?.toDouble() ?? 0.0;
-        var protein = (nutrients['proteins'] as num?)?.toDouble() ?? 0.0;
-        // go to grams page and send name,cal,carb, pro,fat
-        Navigator.push(
+            var Name = product['product_name'] ?? 'Name is unavailable';
+            var nutrients = product['nutriments'];
+            var carbohydrates =
+                (nutrients['carbohydrates_100g'] as num?)?.toDouble() ?? 0.0;
+            var calorie =
+                (nutrients['energy-kcal_100g'] as num?)?.toDouble() ?? 0.0;
+            var fat = (nutrients['fat_100g'] as num?)?.toDouble() ?? 0.0;
+            var protein =
+                (nutrients['proteins_100g'] as num?)?.toDouble() ?? 0.0;
+            // go to grams page and send name,cal,carb, pro,fat
+            Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) =>   addByBarcode(
-      calorie, protein, carbohydrates, fat, Name, mealItems)
-      ),); 
-
-        } 
+              MaterialPageRoute(
+                  builder: (context) => addByBarcode(
+                      calorie, protein, carbohydrates, fat, Name, mealItems)),
+            );
+          }
+        } else {
+          showErrorDialog(
+              "Nutritional data for this product is not available.");
+        }
       } else {
-        
-       showErrorDialog("Nutritional data for this product is not available.");
+        showErrorDialog("No product found for this barcode.");
       }
-    } else {
-     
-          showErrorDialog("No product found for this barcode.");
+    } catch (e) {
+      showErrorDialog("Error in retrieving the nutritional data.");
     }
-  } catch (e) {
-   
-       showErrorDialog("Error in retrieving the nutritional data.");
   }
-}
+
 // Error Dialg
-void showErrorDialog(String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.cancel_outlined,
-              color: Color.fromARGB(255, 194, 43, 98),
-              size: 80,
-            ),
-            SizedBox(height: 25),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22),
-            ),
-            SizedBox(height: 15),
-            Text(
-              'Do you want to add the nutritions manually?',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15),
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center, 
+  void showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddBySearch(mealItems: mealItems)),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Color(0xff023b96),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  minimumSize: Size(100, 44),
-                ),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.white),
-                ),
+              Icon(
+                Icons.cancel_outlined,
+                color: Color.fromARGB(255, 194, 43, 98),
+                size: 80,
               ),
-              SizedBox(width: 10), 
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddNutrition(mealItems: mealItems)),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Color(0xff023b96),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  minimumSize: Size(100, 44),
-                ),
-                child: Text(
-                  'Ok',
-                  style: TextStyle(color: Colors.white),
-                ),
+              SizedBox(height: 25),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22),
+              ),
+              SizedBox(height: 15),
+              Text(
+                'Do you want to add the nutritions manually?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15),
               ),
             ],
           ),
-        ],
-      );
-    },
-  );
-}
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              AddBySearch(mealItems: mealItems)),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Color(0xff023b96),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: Size(100, 44),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                SizedBox(width: 10),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              AddNutrition(mealItems: mealItems)),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Color(0xff023b96),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: Size(100, 44),
+                  ),
+                  child: Text(
+                    'Ok',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-
-
-void navigateToAddFoodItem(foodItem food) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => Addfooditem(
-        calorie: food.calorie,
-        protein: food.protein,
-        carb: food.carb,
-        fat: food.fat,
-        name: food.name,
-        portion: food.portion,
-        source: food.source,
-        mealItems: mealItems, 
+  void navigateToAddFoodItem(foodItem food) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Addfooditem(
+          calorie: food.calorie,
+          protein: food.protein,
+          carb: food.carb,
+          fat: food.fat,
+          name: food.name,
+          portion: food.portion,
+          source: food.source,
+          mealItems: mealItems,
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,14 +261,15 @@ void navigateToAddFoodItem(foodItem food) {
             children: [
               IconButton(
                 icon: Icon(
-                Icons.arrow_back_ios,
-                color: Color.fromARGB(255, 0, 0, 0),
+                  Icons.arrow_back_ios,
+                  color: Color.fromARGB(255, 0, 0, 0),
                   size: 30,
-                    ),
+                ),
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => Cart(foodItems: mealItems)),
+                    MaterialPageRoute(
+                        builder: (context) => Cart(foodItems: mealItems)),
                   );
                 },
                 padding: EdgeInsets.all(8),
@@ -285,7 +296,8 @@ void navigateToAddFoodItem(foodItem food) {
         body: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 27.0, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 27.0, vertical: 6),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -298,7 +310,8 @@ void navigateToAddFoodItem(foodItem food) {
                     Align(
                       alignment: Alignment.center,
                       child: Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                        padding:
+                            const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
                         child: Text(
                           'Add Meal Ingredients From The Search Bar Or By Scanning The Ingredient\'s Barcode!',
                           textAlign: TextAlign.center,
@@ -309,7 +322,7 @@ void navigateToAddFoodItem(foodItem food) {
                           ),
                         ),
                       ),
-                     ),
+                    ),
                   ],
                 ),
               ),
@@ -328,7 +341,10 @@ void navigateToAddFoodItem(foodItem food) {
                   height: double.infinity,
                 ),
               ),
-            if (_foodDetails.isEmpty && _isFocused && _textController.text.isNotEmpty && !_isLoading)
+            if (_foodDetails.isEmpty &&
+                _isFocused &&
+                _textController.text.isNotEmpty &&
+                !_isLoading)
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(27, 100, 27, 0),
                 child: Container(
@@ -377,16 +393,19 @@ void navigateToAddFoodItem(foodItem food) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddNutrition(mealItems: mealItems),
+                              builder: (context) =>
+                                  AddNutrition(mealItems: mealItems),
                             ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                         ),
                         child: const Text(
                           'Add Manually',
@@ -455,38 +474,35 @@ void navigateToAddFoodItem(foodItem food) {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
                         suffixIcon: Padding(
+                          padding: EdgeInsets.zero,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
                                 padding: EdgeInsets.zero,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: Image.asset(
-                                        'images/barcode_scanner.png',
-                                        height: 27,
-                                        color: Color(0xFF555555),
-                                      ),
-                                      onPressed: () {
-                                        _scanBarcode();
-
-                                      },
-                                    ),
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: Icon(
-                                        Icons.camera_alt,
-                                        color: Color(0xFF555555),
-                                        size: 24,
-                                      ),
-                                      onPressed: () {
-                                        
-                                        print('Camera icon pressed...');
-                                      },
-                                    ),
-                                  ],
+                                icon: Image.asset(
+                                  'images/barcode_scanner.png',
+                                  height: 27,
+                                  color: Color(0xFF555555),
                                 ),
+                                onPressed: () {
+                                  _scanBarcode();
+                                },
                               ),
-
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: Icon(
+                                  Icons.camera_alt,
+                                  color: Color(0xFF555555),
+                                  size: 24,
+                                ),
+                                onPressed: () {
+                                  print('Camera icon pressed...');
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       style: TextStyle(
                         fontSize: 16,
@@ -496,72 +512,75 @@ void navigateToAddFoodItem(foodItem food) {
                   ),
                 ),
                 if (_foodDetails.isNotEmpty && _isFocused)
-  Padding(
-    padding: const EdgeInsetsDirectional.fromSTEB(27, 0, 27, 0),
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3), // Shadow offset
-          ),
-        ],
-      ),
-      constraints: const BoxConstraints(maxHeight: 300),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(_foodDetails.length, (index) {
-            final food = _foodDetails[index]; // Get the food item by index
-            return GestureDetector(
-              onTap: () {
-                // Update the selected food index
-                setState(() {
-                  _selectedFoodIndex = index; // Highlight the tapped item
-                });
-                print('Preparing to send the following data:');
-                print('Name: ${food.name}');
-                print('Calories: ${food.calorie}');
-                print('Protein: ${food.protein}');
-                print('Carbs: ${food.carb}');
-                print('Fat: ${food.fat}');
-                print('Portion: ${food.portion}');
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(27, 0, 27, 0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            spreadRadius: 1,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3), // Shadow offset
+                          ),
+                        ],
+                      ),
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(_foodDetails.length, (index) {
+                            final food = _foodDetails[
+                                index]; // Get the food item by index
+                            return GestureDetector(
+                              onTap: () {
+                                // Update the selected food index
+                                setState(() {
+                                  _selectedFoodIndex =
+                                      index; // Highlight the tapped item
+                                });
+                                print('Preparing to send the following data:');
+                                print('Name: ${food.name}');
+                                print('Calories: ${food.calorie}');
+                                print('Protein: ${food.protein}');
+                                print('Carbs: ${food.carb}');
+                                print('Fat: ${food.fat}');
+                                print('Portion: ${food.portion}');
 
-                navigateToAddFoodItem(food); // Pass the foodItem object directly
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10.0,
-                  horizontal: 12.0,
-                ),
-                decoration: BoxDecoration(
-                  color: _selectedFoodIndex == index
-                      ? const Color(0xFFD8E6FD).withOpacity(0.4)
-                      : Colors.transparent,
-                ),
-                child: Text(
-                  food.name, // Accessing the name directly from the foodItem object
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF101213),
+                                navigateToAddFoodItem(
+                                    food); // Pass the foodItem object directly
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10.0,
+                                  horizontal: 12.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _selectedFoodIndex == index
+                                      ? const Color(0xFFD8E6FD).withOpacity(0.4)
+                                      : Colors.transparent,
+                                ),
+                                child: Text(
+                                  food.name, // Accessing the name directly from the foodItem object
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                    color: Color(0xFF101213),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    ),
-  ),
               ],
             ),
           ],
@@ -571,16 +590,16 @@ void navigateToAddFoodItem(foodItem food) {
   }
 }
 
-
-
 Future<void> searchFood(String searchExpression) async {
-
   final String consumerKey = "e8d5986b473d4d5f9403c45089673295";
   final String consumerSecret = "f6f68754b37947149440701c6f4a18a5";
 
   // Step 1: Generate timestamp and nonce
-  final oauthTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
-  final oauthNonce = base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256))).replaceAll('=', '');
+  final oauthTimestamp =
+      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+  final oauthNonce =
+      base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256)))
+          .replaceAll('=', '');
 
   // Step 2: Prepare the parameters
   final parameters = {
@@ -596,14 +615,16 @@ Future<void> searchFood(String searchExpression) async {
 
   // Step 3: Normalize the parameters and create the signature base string
   final normalizedParams = parameters.entries
-      .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+      .map((e) =>
+          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
       .toList()
     ..sort();
   final paramString = normalizedParams.join('&');
 
   final httpMethod = 'GET';
   final baseUrl = 'https://platform.fatsecret.com/rest/server.api';
-  final signatureBaseString = '$httpMethod&${Uri.encodeQueryComponent(baseUrl)}&${Uri.encodeQueryComponent(paramString)}';
+  final signatureBaseString =
+      '$httpMethod&${Uri.encodeQueryComponent(baseUrl)}&${Uri.encodeQueryComponent(paramString)}';
 
   // Step 4: Create the signing key
   final signingKey = '${Uri.encodeQueryComponent(consumerSecret)}&';
@@ -627,14 +648,16 @@ Future<void> searchFood(String searchExpression) async {
   }
 }
 
-
 Future<List<foodItem>> searchFood1(String query) async {
   final String consumerKey = "e8d5986b473d4d5f9403c45089673295";
   final String consumerSecret = "f6f68754b37947149440701c6f4a18a5";
   query = query.trim();
 
-  final oauthTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
-  final oauthNonce = base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256))).replaceAll('=', '');
+  final oauthTimestamp =
+      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+  final oauthNonce =
+      base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256)))
+          .replaceAll('=', '');
 
   final parameters = {
     'oauth_consumer_key': consumerKey,
@@ -648,14 +671,16 @@ Future<List<foodItem>> searchFood1(String query) async {
   };
 
   final normalizedParams = parameters.entries
-      .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+      .map((e) =>
+          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
       .toList()
     ..sort();
   final paramString = normalizedParams.join('&');
 
   final httpMethod = 'GET';
   final baseUrl = 'https://platform.fatsecret.com/rest/server.api';
-  final signatureBaseString = '$httpMethod&${Uri.encodeQueryComponent(baseUrl)}&${Uri.encodeQueryComponent(paramString)}';
+  final signatureBaseString =
+      '$httpMethod&${Uri.encodeQueryComponent(baseUrl)}&${Uri.encodeQueryComponent(paramString)}';
 
   final signingKey = '${Uri.encodeQueryComponent(consumerSecret)}&';
 
@@ -669,7 +694,9 @@ Future<List<foodItem>> searchFood1(String query) async {
   double _parsePortionToGrams(String portionString) {
     if (portionString.contains('g')) {
       // Extract numeric value for gram-based portions
-      return double.tryParse(RegExp(r'[\d.]+').stringMatch(portionString) ?? '0') ?? 0.0;
+      return double.tryParse(
+              RegExp(r'[\d.]+').stringMatch(portionString) ?? '0') ??
+          0.0;
     } else if (portionString.contains('1/2')) {
       return 50.0; // Approximate value for "1/2 cup"
     } else if (portionString.contains('1/4')) {
@@ -687,7 +714,9 @@ Future<List<foodItem>> searchFood1(String query) async {
 
       print('Response: ${response.body}');
 
-      if (data != null && data['foods'] != null && data['foods']['food'] != null) {
+      if (data != null &&
+          data['foods'] != null &&
+          data['foods']['food'] != null) {
         final List<dynamic> foods = data['foods']['food'];
 
         // Use a set to filter unique items by name
@@ -707,17 +736,28 @@ Future<List<foodItem>> searchFood1(String query) async {
             final portionMatch = portionRegex.firstMatch(description);
 
             // Extract the numeric portion value and the unit
-            final String portionString = portionMatch != null ? portionMatch.group(1) ?? '' : '';
-            final double portion = _parsePortionToGrams(portionString); // Convert to grams
+            final String portionString =
+                portionMatch != null ? portionMatch.group(1) ?? '' : '';
+            final double portion =
+                _parsePortionToGrams(portionString); // Convert to grams
 
             // Extract nutritional values
-            final RegExp nutritionRegex = RegExp(r'Calories:\s?([\d.]+)kcal\s?\|\s?Fat:\s?([\d.]+)g\s?\|\s?Carbs:\s?([\d.]+)g\s?\|\s?Protein:\s?([\d.]+)g');
+            final RegExp nutritionRegex = RegExp(
+                r'Calories:\s?([\d.]+)kcal\s?\|\s?Fat:\s?([\d.]+)g\s?\|\s?Carbs:\s?([\d.]+)g\s?\|\s?Protein:\s?([\d.]+)g');
             final match = nutritionRegex.firstMatch(description);
 
-            final double calories = match != null ? double.tryParse(match.group(1) ?? '0') ?? 0.0 : 0.0;
-            final double fat = match != null ? double.tryParse(match.group(2) ?? '0') ?? 0.0 : 0.0;
-            final double carb = match != null ? double.tryParse(match.group(3) ?? '0') ?? 0.0 : 0.0;
-            final double protein = match != null ? double.tryParse(match.group(4) ?? '0') ?? 0.0 : 0.0;
+            final double calories = match != null
+                ? double.tryParse(match.group(1) ?? '0') ?? 0.0
+                : 0.0;
+            final double fat = match != null
+                ? double.tryParse(match.group(2) ?? '0') ?? 0.0
+                : 0.0;
+            final double carb = match != null
+                ? double.tryParse(match.group(3) ?? '0') ?? 0.0
+                : 0.0;
+            final double protein = match != null
+                ? double.tryParse(match.group(4) ?? '0') ?? 0.0
+                : 0.0;
 
             // Add the food item to the list
             uniqueFoods.add(foodItem(
@@ -738,11 +778,11 @@ Future<List<foodItem>> searchFood1(String query) async {
         return [];
       }
     } else {
-      throw Exception('Failed to load food data, status code: ${response.statusCode}');
+      throw Exception(
+          'Failed to load food data, status code: ${response.statusCode}');
     }
   } catch (e) {
     print('Error occurred while fetching food data: $e');
     return [];
   }
-
 }

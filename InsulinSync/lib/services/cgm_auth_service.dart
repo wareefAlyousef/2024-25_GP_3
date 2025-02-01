@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 import 'package:insulin_sync/services/user_service.dart';
 
@@ -8,6 +9,8 @@ class CGMAuthService {
   String? email;
   String? patientId;
   String? name;
+  String? accountId;
+  Digest? accountIdSha256Hash;
   List<dynamic> patients = [];
   String? errorMessage;
   int? minRange, maxRange;
@@ -20,7 +23,7 @@ class CGMAuthService {
       'Cache-Control': 'no-cache',
       'connection': 'Keep-Alive',
       'content-type': 'application/json',
-      'version': '4.7.0',
+      'version': '4.12.0',
       'product': 'llu.android',
     };
 
@@ -43,6 +46,13 @@ class CGMAuthService {
         } else if (responseData['status'] == 0) {
           token = responseData['data']['authTicket']['token'];
           this.email = email;
+          accountId = responseData['data']['user']['id'];
+          // Convert the input to a list of bytes
+          List<int> bytes = utf8.encode(accountId!);
+
+          // Compute the SHA-256 hash
+          accountIdSha256Hash = sha256.convert(bytes);
+
           errorMessage = null; // Clear error message
           return true; // Sign-in successful
         } else {
@@ -66,6 +76,7 @@ class CGMAuthService {
           removePatientId: true,
           removeLibreEmail: true,
           removeLibreName: true,
+          removeLibreAccountId: true,
           removeCgmData: true);
       await userService.removeGlucoseReadings(source: 'libreCGM');
       return true;
@@ -86,9 +97,10 @@ class CGMAuthService {
       'Cache-Control': 'no-cache',
       'connection': 'Keep-Alive',
       'content-type': 'application/json',
-      'version': '4.7.0',
+      'version': '4.12.0',
       'product': 'llu.android',
       'authorization': 'Bearer $token',
+      'Account-Id': '$accountIdSha256Hash'
     };
 
     try {
@@ -160,6 +172,7 @@ class CGMAuthService {
           libreName: name,
           token: token,
           patientId: patientId,
+          libreAccountId: '$accountIdSha256Hash',
           minRange: minRange,
           maxRange: maxRange);
 

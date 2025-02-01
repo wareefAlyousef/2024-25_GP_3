@@ -222,23 +222,23 @@ class _logIn extends State<logIn> {
   }
 
   String? emailValidator(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'Please enter your email';
-  }
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email';
+    }
 
-  // Regular expression for validating email format
-  final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-  
-  if (!emailRegex.hasMatch(value)) {
-    return 'Please enter a valid email address';
-  }
+    // Regular expression for validating email format
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+    
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email address';
+    }
 
-  setState(() {
-    _errorMessage = null; 
-  });
-  
-  return null;
-}
+    setState(() {
+      _errorMessage = null; 
+    });
+    
+    return null;
+  }
 
   String? passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
@@ -276,9 +276,12 @@ class _logIn extends State<logIn> {
           _emailController.text.trim().toLowerCase(),
           _passwordController.text.trim(),
         );
-
+          
+      
         if (user != null) {
-          _showLoginSuccessDialog(context);
+          if (user?.emailVerified == true) {
+            _showLoginSuccessDialog(context);
+          }else{_showEmailNotVerifiedDialog(context,user.email!);}
         }
       } catch (e) {
         print('Login Error: $e');
@@ -684,6 +687,113 @@ class _logIn extends State<logIn> {
                     ),
                   ),
                 )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEmailNotVerifiedDialog(BuildContext context, String email) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 48,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Email Not Verified',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Your email address $email is not verified yet. Please check your inbox and click the verification link.',
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            await user.sendEmailVerification();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Verification email sent to $email.'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          print('Error sending email verification: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to send verification email.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(
+                        'Resend Email',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
