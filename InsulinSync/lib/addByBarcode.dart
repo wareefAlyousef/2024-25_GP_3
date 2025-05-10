@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'main.dart';
 import '../models/foodItem_model.dart';
 import 'AddBySearch.dart';
 import 'Cart.dart';
@@ -81,7 +80,7 @@ class _addByBarcode extends State<addByBarcode> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => Cart(foodItems: mealItems),
+          builder: (context) => Cart(id: '-1', foodItems: mealItems),
         ),
       );
     }
@@ -90,7 +89,7 @@ class _addByBarcode extends State<addByBarcode> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF1F4F8),
+      backgroundColor: Color(0xFFf1f4f8),
       appBar: AppBar(
         backgroundColor: Color(0xFFF1F4F8),
         leading: IconButton(
@@ -103,7 +102,8 @@ class _addByBarcode extends State<addByBarcode> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => AddBySearch(mealItems: mealItems)),
+                  builder: (context) =>
+                      AddBySearch(id: '-1', mealItems: mealItems)),
             );
           },
         ),

@@ -1,8 +1,5 @@
-
 import 'package:flutter/material.dart';
 import 'package:insulin_sync/MainNavigation.dart';
-import 'home_screen.dart';
-import 'main.dart';
 import '../models/note_model.dart';
 import '../services/user_service.dart';
 
@@ -31,9 +28,8 @@ class _AddNoteState extends State<AddNote> {
           data: ThemeData.light().copyWith(
             primaryColor: Color(0xFF023B96),
             colorScheme: ColorScheme.light(
-              primary: Color(0xFF023B96), 
-
-              secondary: Colors.grey, 
+              primary: Color(0xFF023B96),
+              secondary: Colors.grey,
             ),
             buttonTheme: ButtonThemeData(
               textTheme: ButtonTextTheme.primary,
@@ -104,7 +100,7 @@ class _AddNoteState extends State<AddNote> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            $title, 
+                            $title,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -184,15 +180,14 @@ class _AddNoteState extends State<AddNote> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); 
+                            Navigator.of(context).pop();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF023B96),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            minimumSize:
-                                Size(120, 44), 
+                            minimumSize: Size(120, 44),
                           ),
                           child: Text(
                             'Cancel',
@@ -208,17 +203,15 @@ class _AddNoteState extends State<AddNote> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); 
+                            Navigator.of(context).pop();
                             _submitForm();
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Color(0xFF023B96)),
+                            side: BorderSide(color: Color(0xFF023B96)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            minimumSize:
-                                Size(120, 44), 
+                            minimumSize: Size(120, 44),
                           ),
                           child: Text(
                             'Add',
@@ -249,32 +242,33 @@ class _AddNoteState extends State<AddNote> {
       UserService sevice = new UserService();
       if (await sevice.addNote(myNote)) {
         showDialog(
-  context: context,
-  barrierDismissible: false,
-  builder: (BuildContext context) {
-    return AlertDialog(
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: Color(0xff023b96),
-            size: 80,
-          ),
-          SizedBox(height: 25),
-          Text(
-            'Note is added successfully!',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22),
-          ),
-          SizedBox(height: 30), 
-          OutlinedButton(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Color(0xff023b96),
+                    size: 80,
+                  ),
+                  SizedBox(height: 25),
+                  Text(
+                    'Note is added successfully!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 22),
+                  ),
+                  SizedBox(height: 30),
+                  OutlinedButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => MainNavigation()),
+                        (Route<dynamic> route) => false,
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Color(0xff023b96),
@@ -288,18 +282,18 @@ class _AddNoteState extends State<AddNote> {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-        ],
-      ),
-    );
-  },
-);
-Future.delayed(Duration(seconds: 3), () {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
-});
+                ],
+              ),
+            );
+          },
+        );
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigation()),
+            (Route<dynamic> route) => false,
+          );
+        });
       } else {
         showDialog(
           context: context,
@@ -321,13 +315,12 @@ Future.delayed(Duration(seconds: 3), () {
                     style: TextStyle(fontSize: 22),
                   ),
                   SizedBox(height: 15),
-                   Text(
+                  Text(
                     'Something went wrong, please try again.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 15),
                   )
                 ],
-              
               ),
               actions: [
                 Center(
@@ -359,9 +352,9 @@ Future.delayed(Duration(seconds: 3), () {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 240, 240, 240),
+      backgroundColor: Color(0xFFf1f4f8),
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 240, 240, 240),
+        backgroundColor: Color(0xFFf1f4f8),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
@@ -385,8 +378,7 @@ Future.delayed(Duration(seconds: 3), () {
                 child: Text(
                   'Add Note',
                   style: TextStyle(
-                    
-                    fontSize: 36, 
+                    fontSize: 36,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -461,7 +453,7 @@ Future.delayed(Duration(seconds: 3), () {
                               ),
                               maxLines: 3,
                               style: TextStyle(
-                                fontSize: 18, 
+                                fontSize: 18,
                                 color: Colors.black,
                                 fontWeight: FontWeight.normal,
                               ),
@@ -552,8 +544,7 @@ Future.delayed(Duration(seconds: 3), () {
                     ),
 
                     Padding(
-                      padding:
-                          EdgeInsets.fromLTRB(0, 50, 0, 0), 
+                      padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
                       child: Row(
                         children: [
                           Expanded(

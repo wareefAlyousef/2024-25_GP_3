@@ -5,7 +5,7 @@ import 'insulin_model.dart';
 import 'note_model.dart';
 import 'workout_model.dart';
 import 'meal_model.dart';
-import 'contact_model.dart'; // Import the Contact class
+import 'contact_model.dart';
 
 class UserModel {
   String firstName;
@@ -108,7 +108,7 @@ class UserModel {
           : [],
       emergencyContacts: map['emergencyContacts'] != null
           ? (map['emergencyContacts'] as List<dynamic>)
-              .map((item) => Contact.fromMap(item as Map<String, dynamic>))
+              .map((item) => Contact.fromMap(item as Map<String, dynamic>, id: item['id'] as String)) ///////////if an error happend try to delete the last argument
               .toList()
           : [],
     );

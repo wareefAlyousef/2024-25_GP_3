@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulin_sync/MainNavigation.dart';
-import 'home_screen.dart';
-import 'main.dart';
-
 import '../models/glucose_model.dart';
 import '../services/user_service.dart';
 
@@ -21,20 +18,25 @@ class _AddGlucose extends State<AddGlucose> {
   FocusNode myfocus = FocusNode();
   FocusNode myfocus2 = FocusNode();
 
+  String? _timeErrorMessage;
+
   void _showTimePicker() {
     myfocus.unfocus();
     myfocus2.unfocus();
+
+    // Get the current time
+    TimeOfDay now = TimeOfDay.now();
+
     showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: now, // Start from the current time
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
             primaryColor: Color(0xFF023B96),
             colorScheme: ColorScheme.light(
-              primary: Color(0xFF023B96), // Primary color for the theme
-
-              secondary: Colors.grey, // Secondary color for other elements
+              primary: Color(0xFF023B96),
+              secondary: Colors.grey,
             ),
             buttonTheme: ButtonThemeData(
               textTheme: ButtonTextTheme.primary,
@@ -44,9 +46,20 @@ class _AddGlucose extends State<AddGlucose> {
         );
       },
     ).then((value) {
-      setState(() {
-        _timeOfDay = value!;
-      });
+      if (value != null) {
+        // Validate selected time
+        if (value.hour < now.hour ||
+            (value.hour == now.hour && value.minute <= now.minute)) {
+          setState(() {
+            _timeOfDay = value;
+            _timeErrorMessage = null; // Clear error message
+          });
+        } else {
+          setState(() {
+            _timeErrorMessage = "Please select a time in the past";
+          });
+        }
+      }
     });
   }
 
@@ -219,8 +232,7 @@ class _AddGlucose extends State<AddGlucose> {
                             _submitForm();
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Color(0xFF023B96)),
+                            side: BorderSide(color: Color(0xFF023B96)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -280,14 +292,15 @@ class _AddGlucose extends State<AddGlucose> {
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22),
                   ),
-                         SizedBox(height: 30), 
-          OutlinedButton(
+                  SizedBox(height: 30),
+                  OutlinedButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => MainNavigation()),
+                        (Route<dynamic> route) => false,
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Color(0xff023b96),
@@ -301,18 +314,18 @@ class _AddGlucose extends State<AddGlucose> {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-        ],
-      ),
-    );
-  },
-);
-Future.delayed(Duration(seconds: 3), () {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
-});
+                ],
+              ),
+            );
+          },
+        );
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigation()),
+            (Route<dynamic> route) => false,
+          );
+        });
       } else {
         showDialog(
           context: context,
@@ -366,20 +379,15 @@ Future.delayed(Duration(seconds: 3), () {
           },
         );
       }
-
-      
-      
-    } else {
-      
-    }
+    } else {}
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 240, 240, 240),
+      backgroundColor: Color(0xFFf1f4f8),
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 240, 240, 240),
+        backgroundColor: Color(0xFFf1f4f8),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
@@ -403,7 +411,6 @@ Future.delayed(Duration(seconds: 3), () {
                 child: Text(
                   'Add Glucose Reading',
                   style: TextStyle(
-                    
                     fontSize: 30, //check with raneem
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -561,7 +568,7 @@ Future.delayed(Duration(seconds: 3), () {
 
 // container for time user input 3
                           Padding(
-                            padding: EdgeInsets.fromLTRB(25, 5, 0, 20),
+                            padding: EdgeInsets.fromLTRB(25, 5, 0, 4),
                             child: Row(
                               children: [
                                 Align(
@@ -613,6 +620,26 @@ Future.delayed(Duration(seconds: 3), () {
                               ],
                             ),
                           ),
+                          // Error message display for Time Picker
+                          if (_timeErrorMessage != null)
+                            Padding(
+                              padding: EdgeInsets.only(left: 35, bottom: 10),
+                              child: Align(
+                                alignment: Alignment
+                                    .centerLeft, // Aligns text to the left
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    _timeErrorMessage!,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),

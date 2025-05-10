@@ -3,16 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import 'main.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import'termsOfUse.dart';
+import 'termsOfUse.dart';
 import 'dart:async';
-import 'home_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'logIn.dart';
 import 'package:insulin_sync/MainNavigation.dart';
@@ -27,17 +24,16 @@ class MainForm extends StatefulWidget {
 class _MainFormState extends State<MainForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
-  String? _emailErrorMessage; 
+  String? _emailErrorMessage;
 
-  final AuthService authService = AuthService(); 
-
+  final AuthService authService = AuthService();
 
   @override
   void dispose() {
@@ -49,193 +45,203 @@ class _MainFormState extends State<MainForm> {
     super.dispose();
   }
 
-    @override
-      void initState() {
-        super.initState();
-        
-        // Clear email error when user edits the email field
-        _emailController.addListener(() {
-          if (_emailErrorMessage != null) {
-            setState(() {
-              _emailErrorMessage = null;
-            });
-          }
+  @override
+  void initState() {
+    super.initState();
+
+    // Clear email error when user edits the email field
+    _emailController.addListener(() {
+      if (_emailErrorMessage != null) {
+        setState(() {
+          _emailErrorMessage = null;
         });
       }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        resizeToAvoidBottomInset: true,
-        body: Padding(
-          padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 19.0), 
-                      MyBackButton(),
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
-                        child: Text(
-                          'Create an account',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 36,
-                                letterSpacing: 0.0,
-                                color: Color(0xFF333333),
-                              ),
-                        ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: true,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 19.0),
+                    MyBackButton(),
+                    Padding(
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
+                      child: Text(
+                        'Create an account',
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 36,
+                                  letterSpacing: 0.0,
+                                  color: Color(0xFF333333),
+                                ),
                       ),
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 40),
-                        child: Text(
-                          'Let\'s set up your account! Please fill out the details in the form below.',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w400,
-                                fontSize: 19,
-                                color: Color(0xFF666666),
-                                letterSpacing: 0.0,
-                              ),
-                        ),
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 40),
+                      child: Text(
+                        'Let\'s set up your account! Please fill out the details in the form below.',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 19,
+                                  color: Color(0xFF666666),
+                                  letterSpacing: 0.0,
+                                ),
                       ),
-                      Form(
-                        key: _formKey, 
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            buildTextField(
-                              label: 'First Name *',
-                              controller: _firstNameController,
-                              validator: firstNameValidator,
-                              icon: Icons.person,
-                            ),
-                            buildTextField(
-                              label: 'Last Name *',
-                              controller: _lastNameController,
-                              validator: lastNameValidator,
-                              icon: Icons.person_outline,
-                            ),
-                            buildTextField(
-                              label: 'Email *',
-                              controller: _emailController,
-                              validator: emailValidator,
-                              icon: Icons.email,
-                            ),
-                            buildTextField(
-                              label: 'Password *',
-                              isObscured: true,
-                              controller: _passwordController,
-                              validator: passwordValidator,
-                              icon: Icons.lock,
-                            ),
-                            SizedBox(height: 30.0), 
-        // Next Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: CustomButton(
-                  text: 'Next',
-                  onPressed: () async {
-                    // Run synchronous form validation first
-                    bool formIsValid = _formKey.currentState?.validate() == true;
+                    ),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          buildTextField(
+                            label: 'First Name *',
+                            controller: _firstNameController,
+                            validator: firstNameValidator,
+                            icon: Icons.person,
+                          ),
+                          buildTextField(
+                            label: 'Last Name *',
+                            controller: _lastNameController,
+                            validator: lastNameValidator,
+                            icon: Icons.person_outline,
+                          ),
+                          buildTextField(
+                            label: 'Email *',
+                            controller: _emailController,
+                            validator: emailValidator,
+                            icon: Icons.email,
+                          ),
+                          buildTextField(
+                            label: 'Password *',
+                            isObscured: true,
+                            controller: _passwordController,
+                            validator: passwordValidator,
+                            icon: Icons.lock,
+                          ),
+                          SizedBox(height: 30.0),
+                          // Next Button
+                          Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: CustomButton(
+                                text: 'Next',
+                                onPressed: () async {
+                                  // Run synchronous form validation first
+                                  bool formIsValid =
+                                      _formKey.currentState?.validate() == true;
 
-                    if (formIsValid) {
-                      // Now check if the email is already registered using the async validator
-                      bool isRegistered = await authService.isEmailRegistered(_emailController.text.trim().toLowerCase());
+                                  if (formIsValid) {
+                                    // Now check if the email is already registered using the async validator
+                                    bool isRegistered = await authService
+                                        .isEmailRegistered(_emailController.text
+                                            .trim()
+                                            .toLowerCase());
 
-                      if (isRegistered) {
-                        // Set error message for email if already registered and trigger UI update
-                        setState(() {
-                          _emailErrorMessage = 'Email is already registered';
-                        });
-                        // Re-validate form to show the email error under the input field
-                        _formKey.currentState?.validate();
-                      } else {
-                        // Clear any previous error message
-                        setState(() {
-                          _emailErrorMessage = null;
-                        });
+                                    if (isRegistered) {
+                                      // Set error message for email if already registered and trigger UI update
+                                      setState(() {
+                                        _emailErrorMessage =
+                                            'Email is already registered';
+                                      });
+                                      // Re-validate form to show the email error under the input field
+                                      _formKey.currentState?.validate();
+                                    } else {
+                                      // Clear any previous error message
+                                      setState(() {
+                                        _emailErrorMessage = null;
+                                      });
 
-                        // Proceed to the next page only if the email is NOT registered
-                        print('Email is not registered, proceeding...');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PersonalInfoPage(
-                              firstName: _firstNameController.text,
-                              lastName: _lastNameController.text,
-                              email: _emailController.text.trim().toLowerCase(),
-                              password: _passwordController.text,
+                                      // Proceed to the next page only if the email is NOT registered
+                                      print(
+                                          'Email is not registered, proceeding...');
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              PersonalInfoPage(
+                                            firstName:
+                                                _firstNameController.text,
+                                            lastName: _lastNameController.text,
+                                            email: _emailController.text
+                                                .trim()
+                                                .toLowerCase(),
+                                            password: _passwordController.text,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                              )),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: RichText(
+                              text: TextSpan(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14,
+                                      color: Color(0xFF666666),
+                                    ),
+                                children: [
+                                  const TextSpan(
+                                    text: 'Already have an account? ',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16.0,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'Log in',
+                                    style: const TextStyle(
+                                      color: Color(0xFF023B96),
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16.0,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        // Navigate to the logIn page
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => logIn()),
+                                        );
+                                      },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      }
-                    }
-                  },
-                )
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: RichText(
-                  text: TextSpan(
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xFF666666),
-                        ),
-                    children: [
-                      const TextSpan(
-                          text: 'Already have an account? ',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16.0,
-                          ),
-                        ),
-                      TextSpan(
-                        text: 'Log in',
-                        style: const TextStyle(
-                          color: Color(0xFF023B96),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16.0,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            // Navigate to the logIn page
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => logIn()),
-                            );
-                          },
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                ),
-              ),
-
-              
-              
-
-             
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
-  
+
   // Build text field widget
   buildTextField({
     required String label,
@@ -257,7 +263,7 @@ class _MainFormState extends State<MainForm> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 16, 
+                fontSize: 16,
               ),
             ),
           ),
@@ -290,6 +296,7 @@ class _MainFormState extends State<MainForm> {
     }
     return null;
   }
+
   // Synchronous email format validator
   String? emailValidator(String? value) {
     if (value == null || value.isEmpty) {
@@ -297,10 +304,11 @@ class _MainFormState extends State<MainForm> {
     } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
       return 'Please enter a valid email address';
     } else if (_emailErrorMessage != null) {
-      return _emailErrorMessage; 
+      return _emailErrorMessage;
     }
     return null;
   }
+
   // Async Email Validator
   Future<String?> asyncEmailValidator(String? value) async {
     if (value == null || value.isEmpty) {
@@ -310,17 +318,19 @@ class _MainFormState extends State<MainForm> {
     }
 
     // Check if the email is already registered using the AuthService
-    bool isRegistered = await authService.isEmailRegistered(value.trim().toLowerCase());
+    bool isRegistered =
+        await authService.isEmailRegistered(value.trim().toLowerCase());
     if (isRegistered) {
       return 'Email is already registered';
     }
 
-    return null; 
+    return null;
   }
 
   // Password Validator
   String? passwordValidator(String? value) {
-    String pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$';
+    String pattern =
+        r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$';
     RegExp regExp = RegExp(pattern);
 
     if (value == null || value.isEmpty) {
@@ -352,13 +362,13 @@ class PersonalInfoPage extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
-  final String password; 
+  final String password;
 
   PersonalInfoPage({
     required this.firstName,
     required this.lastName,
     required this.email,
-    required this.password, 
+    required this.password,
   });
 
   @override
@@ -366,15 +376,14 @@ class PersonalInfoPage extends StatefulWidget {
 }
 
 class _PersonalInfoPageState extends State<PersonalInfoPage> {
-
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   // Controllers for the form fields
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
-  DateTime? _selectedDate; 
-  bool? _isMale; 
-  String? _errorMessage; 
+  DateTime? _selectedDate;
+  bool? _isMale;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -387,8 +396,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000), 
-      firstDate: DateTime(1900), 
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
     if (picked != null && picked != _selectedDate) {
@@ -398,237 +407,262 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     }
   }
 
-  @override 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-        resizeToAvoidBottomInset: true, 
-        body: Padding(
-          padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-            children: [
-              Expanded(
-                child: SingleChildScrollView( 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 19.0), 
-                      MyBackButton(),
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
-                        child: Text(
-                          'Welcome, ${widget.firstName}!',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 36,
-                                letterSpacing: 0.0,
-                                color: Color(0xFF333333),
-                              ),
-                        ),
+      resizeToAvoidBottomInset: true,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(23.0, 0.0, 23.0, 23.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 19.0),
+                    MyBackButton(),
+                    Padding(
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 0),
+                      child: Text(
+                        'Welcome, ${widget.firstName}!',
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 36,
+                                  letterSpacing: 0.0,
+                                  color: Color(0xFF333333),
+                                ),
                       ),
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 40),
-                        child: Text(
-                          'Please fill out the form below with your personal information.',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w400,
-                                fontSize: 19,
-                                color: Color(0xFF666666),
-                                letterSpacing: 0.0,
-                              ),
-                        ),
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 40),
+                      child: Text(
+                        'Please fill out the form below with your personal information.',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 19,
+                                  color: Color(0xFF666666),
+                                  letterSpacing: 0.0,
+                                ),
                       ),
-                      Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 0, 4), 
-                              child: Row(
+                    ),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                                0, 8, 0, 4),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Gender *',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 16,
+                                    color: Color(0xFF333333),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Gender selection field
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                            child: Container(
+                              alignment: Alignment.centerLeft,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Gender *',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 16,
-                                      color: Color(0xFF333333),
+                                  Wrap(
+                                    spacing: 8.0,
+                                    children: [
+                                      ChoiceChip(
+                                        backgroundColor: const Color.fromARGB(
+                                            255, 255, 255, 255),
+                                        label: Text(
+                                          'Male',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        selected: _isMale == true,
+                                        selectedColor: Color(0x4C095AEC),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
+                                          side: BorderSide(
+                                            color: (_isMale == null &&
+                                                    _errorMessage != null)
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Color(0xFF023B95),
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                        onSelected: (bool selected) {
+                                          setState(() {
+                                            _isMale = true;
+                                            _validateGender();
+                                          });
+                                        },
+                                      ),
+                                      ChoiceChip(
+                                        backgroundColor: const Color.fromARGB(
+                                            255, 255, 255, 255),
+                                        label: Text(
+                                          'Female',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        selected: _isMale == false,
+                                        selectedColor: Color(0x4C095AEC),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
+                                          side: BorderSide(
+                                            color: (_isMale == null &&
+                                                    _errorMessage != null)
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Color(0xFF023B95),
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                        onSelected: (bool selected) {
+                                          setState(() {
+                                            _isMale = false;
+                                            _validateGender();
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  // Conditional rendering of the error message for gender
+                                  if (_errorMessage != null)
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.fromLTRB(7, 0, 0, 0),
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .error,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          buildTextField(
+                            label: 'Weight (kg) *',
+                            controller: _weightController,
+                            validator: weightValidator,
+                            icon: FontAwesomeIcons.weight,
+                          ),
+                          buildTextField(
+                            label: 'Height (cm) *',
+                            controller: _heightController,
+                            validator: heightValidator,
+                            icon: Icons.height,
+                          ),
+                          buildDateField(),
+                          SizedBox(height: 50.0),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: CustomButton(
+                              text: 'Next',
+                              onPressed: () {
+                                _validateGender();
+                                if (_formKey.currentState?.validate() == true &&
+                                    _errorMessage == null) {
+                                  // If form validation is successful and gender is selected, proceed
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DiabetesManagementPage(
+                                        firstName: widget.firstName,
+                                        lastName: widget.lastName,
+                                        email:
+                                            widget.email.trim().toLowerCase(),
+                                        weight: _weightController.text,
+                                        height: _heightController.text,
+                                        selectedDate: _selectedDate,
+                                        isMale: _isMale ?? false,
+                                        password: widget.password,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: RichText(
+                              text: TextSpan(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14,
+                                      color: Color(0xFF666666),
+                                    ),
+                                children: [
+                                  const TextSpan(
+                                    text: 'Already have an account? ',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16.0,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'Log in',
+                                    style: const TextStyle(
+                                      color: Color(0xFF023B96),
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16.0,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        // Navigate to the logIn page
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => logIn()),
+                                        );
+                                      },
                                   ),
                                 ],
                               ),
                             ),
-                            // Gender selection field
-                            Padding(
-                              padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                              child: Container(
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Wrap(
-                                      spacing: 8.0,
-                                      children: [
-                                        ChoiceChip(
-                                          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                                          label: Text(
-                                            'Male',
-                                            style: TextStyle(
-                                              fontSize: 18, 
-                                            ),
-                                          ),
-                                          selected: _isMale == true,
-                                          selectedColor: Color(0x4C095AEC),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
-                                            side: BorderSide(
-                                              color: (_isMale == null && _errorMessage != null) 
-                                                  ? Theme.of(context).colorScheme.error 
-                                                  : Color(0xFF023B95), 
-                                              width: 1.0,
-                                            ),
-                                          ),
-                                          onSelected: (bool selected) {
-                                            setState(() {
-                                              _isMale = true;
-                                              _validateGender(); 
-                                            });
-                                          },
-                                        ),
-                                        ChoiceChip(
-                                          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                                          label: Text(
-                                            'Female',
-                                            style: TextStyle(
-                                              fontSize: 18, 
-                                            ),
-                                          ),
-                                          selected: _isMale == false,
-                                          selectedColor: Color(0x4C095AEC),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
-                                            side: BorderSide(
-                                              color: (_isMale == null && _errorMessage != null) 
-                                                  ? Theme.of(context).colorScheme.error 
-                                                  : Color(0xFF023B95),  
-                                              width: 1.0,
-                                            ),
-                                          ),
-                                          onSelected: (bool selected) {
-                                            setState(() {
-                                              _isMale = false;
-                                              _validateGender(); 
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                    // Conditional rendering of the error message for gender
-                                    if (_errorMessage != null)
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(7, 0, 0, 0),
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.error,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            buildTextField(
-                              label: 'Weight (kg) *',
-                              controller: _weightController,
-                              validator: weightValidator,
-                              icon: FontAwesomeIcons.weight, 
-                            ),
-                            buildTextField(
-                              label: 'Height (cm) *',
-                              controller: _heightController,
-                              validator: heightValidator,
-                              icon: Icons.height,
-                            ),
-                            buildDateField(),
-                            SizedBox(height: 50.0), 
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: CustomButton(
-                                text: 'Next',
-                                onPressed: () {
-                                  _validateGender(); 
-                                  if (_formKey.currentState?.validate() == true && _errorMessage == null) {
-                                    // If form validation is successful and gender is selected, proceed
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => DiabetesManagementPage(
-                                          firstName: widget.firstName,
-                                          lastName: widget.lastName,
-                                          email: widget.email.trim().toLowerCase(),
-                                          weight: _weightController.text,
-                                          height: _heightController.text,
-                                          selectedDate: _selectedDate,
-                                          isMale: _isMale ?? false, 
-                                          password: widget.password,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: RichText(
-                                text: TextSpan(
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 14,
-                                        color: Color(0xFF666666),
-                                      ),
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Already have an account? ',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 16.0,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: 'Log in',
-                                      style: const TextStyle(
-                                        color: Color(0xFF023B96),
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 16.0,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          // Navigate to the logIn page
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => logIn()),
-                                          );
-                                        },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    );
-                }
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // Gender Validator
   void _validateGender() {
@@ -671,7 +705,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                 autofillHint: AutofillHints.birthday,
                 prefixIcon: Icons.calendar_today,
                 validator: (value) {
-                  return ageValidator(context, _selectedDate); // Pass the context and selected date
+                  return ageValidator(context,
+                      _selectedDate); // Pass the context and selected date
                 },
                 obscureText: false,
               ),
@@ -683,125 +718,125 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   }
 
   // Text Field Builder
- Widget buildTextField({
-  required String label,
-  required TextEditingController controller,
-  required IconData icon,
-  String? Function(String?)? validator,
-}) {
-  bool isNumericField = label.contains('Weight') || label.contains('Height');
+  Widget buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    String? Function(String?)? validator,
+  }) {
+    bool isNumericField = label.contains('Weight') || label.contains('Height');
 
-  return Padding(
-    padding: const EdgeInsetsDirectional.fromSTEB(0, 18, 0, 0),
-    child: Column(
-      mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 16, 
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(0, 18, 0, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 4),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+              ),
             ),
           ),
-        ),
-        Builder(
-          builder: (context) {
-            return TextFormField(
-              controller: controller,
-              validator: validator,
-              obscureText: false,
-              textInputAction: TextInputAction.next,
-              keyboardType: isNumericField ? TextInputType.number : TextInputType.text,
-              inputFormatters: isNumericField
-                  ? [FilteringTextInputFormatter.digitsOnly] 
-                  : [],
-              decoration: InputDecoration(
-                prefixIcon: Icon(icon),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Color(0xFF023B95),
-                    width: 1,
+          Builder(
+            builder: (context) {
+              return TextFormField(
+                controller: controller,
+                validator: validator,
+                obscureText: false,
+                textInputAction: TextInputAction.next,
+                keyboardType:
+                    isNumericField ? TextInputType.number : TextInputType.text,
+                inputFormatters: isNumericField
+                    ? [FilteringTextInputFormatter.digitsOnly]
+                    : [],
+                decoration: InputDecoration(
+                  prefixIcon: Icon(icon),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Color(0xFF023B95),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Color(0xFF023B95),
-                    width: 2,
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Color(0xFF023B95),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.error,
-                    width: 1,
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.error,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.error,
-                    width: 1,
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.error,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  contentPadding: EdgeInsets.symmetric(vertical: 13),
+                  filled: true,
+                  fillColor: Color(0xFFFFFFFF),
                 ),
-                contentPadding: EdgeInsets.symmetric(vertical: 13),
-                filled: true,
-                fillColor: Color(0xFFFFFFFF),
-              ),
-              style: TextStyle(
-                fontSize: 18, 
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
+                style: TextStyle(
+                  fontSize: 18,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
 // Weight Validator
-String? weightValidator(String? value) {
-  // Check if the input is null or empty
-  if (value == null || value.isEmpty) {
-    return 'Please enter your weight';
+  String? weightValidator(String? value) {
+    // Check if the input is null or empty
+    if (value == null || value.isEmpty) {
+      return 'Please enter your weight';
+    }
+    final double? weight = double.tryParse(value);
+    // Check if the input is a valid number
+    if (weight == null) {
+      return 'Please enter a valid number';
+    }
+    // Check if the weight is within the valid range for adults (30kg to 500kg)
+    if (weight < 30 || weight > 500) {
+      return 'Please enter a weight between 30 and 500 kg';
+    }
+    // If all checks pass, the weight is valid
+    return null;
   }
-  final double? weight = double.tryParse(value);
-  // Check if the input is a valid number
-  if (weight == null) {
-    return 'Please enter a valid number';
-  }
-  // Check if the weight is within the valid range for adults (30kg to 500kg)
-  if (weight < 30 || weight > 500) {
-    return 'Please enter a weight between 30 and 500 kg';
-  }
-  // If all checks pass, the weight is valid
-  return null;
-}
 
-// Height Validator 
-String? heightValidator(String? value) {
-  // Check if the input is null or empty
-  if (value == null || value.isEmpty) {
-    return 'Please enter your height';
+// Height Validator
+  String? heightValidator(String? value) {
+    // Check if the input is null or empty
+    if (value == null || value.isEmpty) {
+      return 'Please enter your height';
+    }
+    // Try to parse the input to a double (for height in cm)
+    final double? height = double.tryParse(value);
+    // Check if the input is a valid number
+    if (height == null) {
+      return 'Please enter a valid number';
+    }
+    // Check if the height is within the valid range for adults (50cm to 250cm)
+    if (height < 50 || height > 250) {
+      return 'Please enter a height between 50 and 250 cm';
+    }
+    return null;
   }
-  // Try to parse the input to a double (for height in cm)
-  final double? height = double.tryParse(value);
-  // Check if the input is a valid number
-  if (height == null) {
-    return 'Please enter a valid number';
-  }
-  // Check if the height is within the valid range for adults (50cm to 250cm)
-  if (height < 50 || height > 250) {
-    return 'Please enter a height between 50 and 250 cm';
-  }
-  return null;
-}
 
-
-  // Validator for Age 
+  // Validator for Age
   String? ageValidator(BuildContext context, DateTime? selectedDate) {
     if (selectedDate == null) {
       return 'Please select your date of birth';
@@ -809,7 +844,8 @@ String? heightValidator(String? value) {
     DateTime today = DateTime.now();
     int age = today.year - selectedDate.year;
 
-    if (today.month < selectedDate.month || (today.month == selectedDate.month && today.day < selectedDate.day)) {
+    if (today.month < selectedDate.month ||
+        (today.month == selectedDate.month && today.day < selectedDate.day)) {
       age--;
     }
     if (age < 18) {
@@ -818,60 +854,60 @@ String? heightValidator(String? value) {
         builder: (BuildContext context) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius:  BorderRadius.circular(28.0), 
+              borderRadius: BorderRadius.circular(28.0),
             ),
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.center, 
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.warning_amber_rounded, 
-                  color: Theme.of(context).colorScheme.error, 
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.error,
                   size: 30,
                 ),
-                SizedBox(width: 10), 
+                SizedBox(width: 10),
                 Text(
                   'Age Restriction',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary, 
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
             ),
             content: Column(
-              mainAxisSize: MainAxisSize.min, 
-              mainAxisAlignment: MainAxisAlignment.center, 
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'This app is only for adults 18 years old and above. Please come back when you\'re old enough!',
-                  style: TextStyle(fontSize: 16, color: Colors.black), 
-                  textAlign: TextAlign.center, 
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
-            actionsPadding: EdgeInsets.symmetric(horizontal: 10), 
+            actionsPadding: EdgeInsets.symmetric(horizontal: 10),
             actions: [
-              Center( 
+              Center(
                 child: TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); 
+                    Navigator.of(context).pop();
                   },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                    backgroundColor: Theme.of(context).colorScheme.primary, 
-                    foregroundColor: Colors.white, 
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), 
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: Text(
                     'OK',
-                    style: TextStyle(fontSize: 16), 
+                    style: TextStyle(fontSize: 16),
                   ),
                 ),
               ),
-              SizedBox(height: 13), 
+              SizedBox(height: 13),
             ],
           );
         },
@@ -892,18 +928,18 @@ class DiabetesManagementPage extends StatefulWidget {
   final String weight;
   final String height;
   final DateTime? selectedDate;
-  final bool? isMale; 
+  final bool? isMale;
   final String password;
 
   DiabetesManagementPage({
-    Key? key, 
+    Key? key,
     required this.firstName,
     required this.lastName,
     required this.email,
     required this.weight,
     required this.height,
     this.selectedDate,
-    this.isMale, 
+    this.isMale,
     required this.password,
   }) : super(key: key);
 
@@ -912,23 +948,25 @@ class DiabetesManagementPage extends StatefulWidget {
 }
 
 class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
-  final TextEditingController _longActingController = TextEditingController(); 
+  final TextEditingController _longActingController = TextEditingController();
   final TextEditingController _shortActingController = TextEditingController();
-  final TextEditingController _insulinToCarbController = TextEditingController();
-  final TextEditingController _correctionFactorController = TextEditingController();
+  final TextEditingController _insulinToCarbController =
+      TextEditingController();
+  final TextEditingController _correctionFactorController =
+      TextEditingController();
 
   String? _longActingError;
   String? _shortActingError;
   String? _insulinToCarbError;
   String? _correctionFactorError;
-  bool _isAgreedToTerms = false; 
+  bool _isAgreedToTerms = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(23.0, 24.0, 23.0, 23.0), 
+          padding: const EdgeInsets.fromLTRB(23.0, 24.0, 23.0, 23.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -995,7 +1033,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 children: [
                   Checkbox(
                     value: _isAgreedToTerms,
-                    onChanged: null, 
+                    onChanged: null,
                   ),
                   Expanded(
                     child: InkWell(
@@ -1058,13 +1096,13 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               //           dateOfBirth: widget.selectedDate!,
               //           dailyBasal: double.parse(_longActingController.text),
               //           dailyBolus: double.parse(_shortActingController.text),
-              //           carbRatio: _insulinToCarbController.text.isNotEmpty 
-              //             ? double.parse(_insulinToCarbController.text) 
+              //           carbRatio: _insulinToCarbController.text.isNotEmpty
+              //             ? double.parse(_insulinToCarbController.text)
               //             : double.parse((500/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
-              //           correctionRatio: _correctionFactorController.text.isNotEmpty 
-              //             ? double.parse(_correctionFactorController.text) 
+              //           correctionRatio: _correctionFactorController.text.isNotEmpty
+              //             ? double.parse(_correctionFactorController.text)
               //             : double.parse((1800/(double.parse(_longActingController.text)+double.parse(_shortActingController.text))).toStringAsFixed(2)),
-              //           gender: widget.isMale ?? false,  
+              //           gender: widget.isMale ?? false,
               //         );
 
               //         // Step 5: Show success dialog and navigate to the Home page
@@ -1108,11 +1146,11 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               //           dateOfBirth: widget.selectedDate!,
               //           dailyBasal: double.parse(_longActingController.text),
               //           dailyBolus: double.parse(_shortActingController.text),
-              //           carbRatio: _insulinToCarbController.text.isNotEmpty 
-              //             ? double.parse(_insulinToCarbController.text) 
+              //           carbRatio: _insulinToCarbController.text.isNotEmpty
+              //             ? double.parse(_insulinToCarbController.text)
               //             : double.parse((500 / (double.parse(_longActingController.text) + double.parse(_shortActingController.text))).toStringAsFixed(2)),
-              //           correctionRatio: _correctionFactorController.text.isNotEmpty 
-              //             ? double.parse(_correctionFactorController.text) 
+              //           correctionRatio: _correctionFactorController.text.isNotEmpty
+              //             ? double.parse(_correctionFactorController.text)
               //             : double.parse((1800 / (double.parse(_longActingController.text) + double.parse(_shortActingController.text))).toStringAsFixed(2)),
               //           gender: widget.isMale ?? false,
               //         );
@@ -1138,9 +1176,10 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   _validateInsulinInput(context);
 
                   // Only proceed if there are no validation errors
-                  if (_longActingError == null && _shortActingError == null && 
-                      _insulinToCarbError == null && _correctionFactorError == null) {
-                    
+                  if (_longActingError == null &&
+                      _shortActingError == null &&
+                      _insulinToCarbError == null &&
+                      _correctionFactorError == null) {
                     // Step 2: Show the confirmation dialog
                     bool confirmed = await _showConfirmationDialog(context);
                     if (!confirmed) return;
@@ -1163,14 +1202,21 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                         dateOfBirth: widget.selectedDate!,
                         dailyBasal: double.parse(_longActingController.text),
                         dailyBolus: double.parse(_shortActingController.text),
-                        carbRatio: _insulinToCarbController.text.isNotEmpty 
-                          ? double.parse(_insulinToCarbController.text) 
-                          : double.parse((500 / (double.parse(_longActingController.text) + 
-                              double.parse(_shortActingController.text))).toStringAsFixed(2)),
-                        correctionRatio: _correctionFactorController.text.isNotEmpty 
-                          ? double.parse(_correctionFactorController.text) 
-                          : double.parse((1800 / (double.parse(_longActingController.text) + 
-                              double.parse(_shortActingController.text))).toStringAsFixed(2)),
+                        carbRatio: _insulinToCarbController.text.isNotEmpty
+                            ? double.parse(_insulinToCarbController.text)
+                            : double.parse((500 /
+                                    (double.parse(_longActingController.text) +
+                                        double.parse(
+                                            _shortActingController.text)))
+                                .toStringAsFixed(2)),
+                        correctionRatio: _correctionFactorController
+                                .text.isNotEmpty
+                            ? double.parse(_correctionFactorController.text)
+                            : double.parse((1800 /
+                                    (double.parse(_longActingController.text) +
+                                        double.parse(
+                                            _shortActingController.text)))
+                                .toStringAsFixed(2)),
                         gender: widget.isMale ?? false,
                       );
 
@@ -1193,7 +1239,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
 
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: Center( 
+                child: Center(
                   child: RichText(
                     text: TextSpan(
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1221,7 +1267,8 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                               // Navigate to the logIn page
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => logIn()),
+                                MaterialPageRoute(
+                                    builder: (context) => logIn()),
                               );
                             },
                         ),
@@ -1237,7 +1284,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
     );
   }
 
-  void _validateInsulinInput(BuildContext context) { 
+  void _validateInsulinInput(BuildContext context) {
     setState(() {
       // Reset error messages
       _longActingError = null;
@@ -1263,7 +1310,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
         if (shortActing == null || shortActing <= 0) {
           _shortActingError = 'Please enter a valid short-acting insulin unit.';
         } else {
-          _shortActingError = null; 
+          _shortActingError = null;
         }
       } else {
         _shortActingError = 'Please enter your short-acting insulin units.';
@@ -1273,13 +1320,15 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       if (_insulinToCarbController.text.isNotEmpty) {
         double? insulinToCarb = double.tryParse(_insulinToCarbController.text);
         if (insulinToCarb == null || insulinToCarb <= 0) {
-          _insulinToCarbError = 'Please enter a valid insulin-to-carbohydrate ratio.';
+          _insulinToCarbError =
+              'Please enter a valid insulin-to-carbohydrate ratio.';
         }
       }
 
       // Validate correction factor (if provided)
       if (_correctionFactorController.text.isNotEmpty) {
-        double? correctionFactor = double.tryParse(_correctionFactorController.text);
+        double? correctionFactor =
+            double.tryParse(_correctionFactorController.text);
         if (correctionFactor == null || correctionFactor <= 0) {
           _correctionFactorError = 'Please enter a valid correction factor.';
         }
@@ -1295,8 +1344,9 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
     try {
       weightValue = double.parse(widget.weight);
     } catch (e) {
-      _showWarningDialog(context, 'Invalid Weight Input', 'Please enter a valid weight value.');
-      return false; 
+      _showWarningDialog(context, 'Invalid Weight Input',
+          'Please enter a valid weight value.');
+      return false;
     }
 
     if (weightValue > 0) {
@@ -1307,7 +1357,8 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       double minBolus = 0.5 * minTDD;
       double maxBolus = 0.6 * maxTDD;
 
-      bool isHighDose = longActing > maxBasal * 1.5 || shortActing > maxBolus * 1.5;
+      bool isHighDose =
+          longActing > maxBasal * 1.5 || shortActing > maxBolus * 1.5;
       bool confirmed = false;
 
       await showDialog(
@@ -1315,10 +1366,10 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
         builder: (BuildContext context) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28.0), 
+              borderRadius: BorderRadius.circular(28.0),
             ),
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.center, 
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   isHighDose ? Icons.warning_amber_rounded : Icons.info_outline,
@@ -1327,10 +1378,12 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                       : Theme.of(context).colorScheme.primary,
                   size: 30,
                 ),
-                SizedBox(width: 8), 
-                Expanded( 
+                SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    isHighDose ? 'Warning: Extremely High Insulin Dosage' : 'Confirm Insulin Dosage',
+                    isHighDose
+                        ? 'Warning: Extremely High Insulin Dosage'
+                        : 'Confirm Insulin Dosage',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -1345,7 +1398,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start, 
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'You entered:\n'
@@ -1353,7 +1406,9 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   'Short-acting insulin: $shortActing units (Recommended: ${minBolus.toStringAsFixed(1)} - ${maxBolus.toStringAsFixed(1)} units)\n',
                   style: TextStyle(
                     fontSize: 16,
-                    color: isHighDose ? Theme.of(context).colorScheme.error : Colors.black,
+                    color: isHighDose
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.black,
                   ),
                 ),
                 if (isHighDose)
@@ -1370,7 +1425,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded( 
+                    Expanded(
                       child: Text(
                         'Calculations based on weight of ${weightValue?.toStringAsFixed(1)} kg',
                         style: TextStyle(
@@ -1388,29 +1443,31 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                           builder: (BuildContext context) {
                             return AlertDialog(
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28.0), 
+                                borderRadius: BorderRadius.circular(28.0),
                               ),
                               title: Row(
-                                mainAxisAlignment: MainAxisAlignment.center, 
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.info_outline,
-                                    color: Theme.of(context).colorScheme.primary, 
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                     size: 30,
                                   ),
-                                  SizedBox(width: 10), 
+                                  SizedBox(width: 10),
                                   Text(
                                     'Formulas Used',
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 ],
                               ),
                               content: Column(
-                                mainAxisSize: MainAxisSize.min, 
+                                mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
@@ -1424,29 +1481,33 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                                     'Bolus (Short-acting) insulin: \n'
                                     'Min: 0.5 * Min TDD\n'
                                     'Max: 0.6 * Max TDD',
-                                    style: TextStyle(fontSize: 16, color: Colors.black), 
-                                    textAlign: TextAlign.center, 
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.black),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
-                              actionsPadding: EdgeInsets.symmetric(horizontal: 10), 
+                              actionsPadding:
+                                  EdgeInsets.symmetric(horizontal: 10),
                               actions: [
-                                Center( 
+                                Center(
                                   child: TextButton(
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                     },
                                     style: TextButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                                      backgroundColor: Theme.of(context).colorScheme.primary, 
-                                      foregroundColor: Colors.white, 
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 25, vertical: 10),
+                                      backgroundColor:
+                                          Theme.of(context).colorScheme.primary,
+                                      foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
                                     child: Text(
                                       'Close',
-                                      style: TextStyle(fontSize: 16), 
+                                      style: TextStyle(fontSize: 16),
                                     ),
                                   ),
                                 ),
@@ -1474,7 +1535,9 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   "Are you sure you want to proceed with these dosages?",
                   style: TextStyle(
                     fontSize: 16,
-                    color: isHighDose ? Theme.of(context).colorScheme.error : Colors.black,
+                    color: isHighDose
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.black,
                   ),
                 ),
               ],
@@ -1483,19 +1546,20 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly, 
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop(); 
+                        Navigator.of(context).pop();
                         confirmed = false;
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                        backgroundColor: Colors.grey[200], 
-                        foregroundColor:isHighDose
-                              ? Theme.of(context).colorScheme.error
-                              : Colors.black, 
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                        backgroundColor: Colors.grey[200],
+                        foregroundColor: isHighDose
+                            ? Theme.of(context).colorScheme.error
+                            : Colors.black,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1504,15 +1568,16 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop(); 
+                        Navigator.of(context).pop();
                         confirmed = true;
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                         backgroundColor: isHighDose
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.primary, 
-                        foregroundColor: Colors.white, 
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1523,16 +1588,16 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 ),
               ),
             ],
-            backgroundColor: isHighDose
-                ? Color.fromARGB(255, 235, 219, 224) 
-                : Colors.white,
+            backgroundColor:
+                isHighDose ? Color.fromARGB(255, 235, 219, 224) : Colors.white,
           );
         },
       );
 
       return confirmed;
     } else {
-      _showWarningDialog(context, 'Invalid Weight', 'Please enter a valid weight greater than zero.');
+      _showWarningDialog(context, 'Invalid Weight',
+          'Please enter a valid weight greater than zero.');
       return false;
     }
   }
@@ -1540,27 +1605,28 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
   void _showSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, 
+      barrierDismissible: false,
       builder: (BuildContext context) {
         Future.delayed(Duration(seconds: 10), () {
-          Navigator.of(context).pop(); 
+          Navigator.of(context).pop();
           Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => MainNavigation()),
-                      (Route<dynamic> route) => false, 
-                    );
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigation()),
+            (Route<dynamic> route) => false,
+          );
         });
 
         return Dialog(
-          backgroundColor: const Color(0xFF023B95), 
-          insetPadding: EdgeInsets.all(0), 
+          backgroundColor: const Color(0xFF023B95),
+          insetPadding: EdgeInsets.all(0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0), 
+            borderRadius: BorderRadius.circular(0),
           ),
           child: Container(
-            width: MediaQuery.of(context).size.width, 
-            height: MediaQuery.of(context).size.height, 
-            padding: const EdgeInsets.symmetric(vertical: 50.0, horizontal: 20.0),
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            padding:
+                const EdgeInsets.symmetric(vertical: 50.0, horizontal: 20.0),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF024BB1), Color(0xFF012A70)],
@@ -1569,14 +1635,14 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
               ),
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, 
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Icon(
                   Icons.check_circle_outline,
                   color: Colors.white,
-                  size: 120, 
-                  semanticLabel: 'Success Icon', 
+                  size: 120,
+                  semanticLabel: 'Success Icon',
                 ),
                 SizedBox(height: 30),
                 Center(
@@ -1585,10 +1651,10 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 30, 
+                      fontSize: 30,
                       letterSpacing: 0.5,
                     ),
-                    textAlign: TextAlign.center, 
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 SizedBox(height: 20),
@@ -1597,8 +1663,8 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     'Your account is all set up!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9), 
-                      fontSize: 22, 
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 22,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1610,7 +1676,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     'We’re here to help you manage your diabetes with confidence. Let’s get started by tracking your blood glucose levels and optimizing your insulin dosage.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.85), 
+                      color: Colors.white.withOpacity(0.85),
                       fontSize: 18,
                       height: 1.4,
                     ),
@@ -1623,24 +1689,24 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => MainNavigation()),
-                      (Route<dynamic> route) => false, 
+                      (Route<dynamic> route) => false,
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white, 
-                    elevation: 5, 
-                    shadowColor: Colors.black.withOpacity(0.3), 
+                    backgroundColor: Colors.white,
+                    elevation: 5,
+                    shadowColor: Colors.black.withOpacity(0.3),
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), 
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Text(
                     'Let’s Begin!',
                     style: TextStyle(
-                      color: Color(0xFF023B95), 
+                      color: Color(0xFF023B95),
                       fontSize: 18,
-                      fontWeight: FontWeight.w700, 
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 )
@@ -1658,56 +1724,56 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28.0), 
+            borderRadius: BorderRadius.circular(28.0),
           ),
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.center, 
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.warning_amber_rounded,
-                color: Theme.of(context).colorScheme.error, 
+                color: Theme.of(context).colorScheme.error,
                 size: 30,
               ),
-              SizedBox(width: 10), 
+              SizedBox(width: 10),
               Text(
                 title,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary, 
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
           content: Column(
-            mainAxisSize: MainAxisSize.min, 
-            mainAxisAlignment: MainAxisAlignment.center, 
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 message,
-                style: TextStyle(fontSize: 16, color: Colors.black), 
-                textAlign: TextAlign.center, 
+                style: TextStyle(fontSize: 16, color: Colors.black),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          actionsPadding: EdgeInsets.symmetric(horizontal: 10), 
+          actionsPadding: EdgeInsets.symmetric(horizontal: 10),
           actions: [
-            Center( 
+            Center(
               child: TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  backgroundColor: Theme.of(context).colorScheme.primary, 
-                  foregroundColor: Colors.white, 
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   'OK',
-                  style: TextStyle(fontSize: 16), 
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
@@ -1724,17 +1790,17 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28.0), 
+            borderRadius: BorderRadius.circular(28.0),
           ),
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.center, 
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.info_outline,
-                color: Theme.of(context).colorScheme.primary, 
+                color: Theme.of(context).colorScheme.primary,
                 size: 30,
               ),
-              SizedBox(width: 10), 
+              SizedBox(width: 10),
               Text(
                 'Terms Not Agreed',
                 style: TextStyle(
@@ -1746,27 +1812,27 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
             ],
           ),
           content: Column(
-            mainAxisSize: MainAxisSize.min, 
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'You must agree to the terms to proceed.',
-                style: TextStyle(fontSize: 16, color: Colors.black), 
-                textAlign: TextAlign.center, 
+                style: TextStyle(fontSize: 16, color: Colors.black),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          actionsPadding: EdgeInsets.symmetric(horizontal: 10), 
+          actionsPadding: EdgeInsets.symmetric(horizontal: 10),
           actions: [
-            Center( 
+            Center(
               child: TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); 
+                  Navigator.of(context).pop();
                 },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  backgroundColor: Theme.of(context).colorScheme.primary, 
-                  foregroundColor: Colors.white, 
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -1790,14 +1856,14 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28.0), 
+            borderRadius: BorderRadius.circular(28.0),
           ),
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.center, 
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.error_outline,
-                color: Theme.of(context).colorScheme.error, 
+                color: Theme.of(context).colorScheme.error,
                 size: 30,
               ),
               SizedBox(width: 10),
@@ -1806,40 +1872,40 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary, 
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
           content: Column(
-            mainAxisSize: MainAxisSize.min, 
-            mainAxisAlignment: MainAxisAlignment.center, 
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 message,
-                style: TextStyle(fontSize: 16, color: Colors.black), 
-                textAlign: TextAlign.center, 
+                style: TextStyle(fontSize: 16, color: Colors.black),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          actionsPadding: EdgeInsets.symmetric(horizontal: 10), 
+          actionsPadding: EdgeInsets.symmetric(horizontal: 10),
           actions: [
-            Center( 
+            Center(
               child: TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); 
+                  Navigator.of(context).pop();
                 },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  backgroundColor: Theme.of(context).colorScheme.primary, 
-                  foregroundColor: Colors.white, 
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   'OK',
-                  style: TextStyle(fontSize: 16), 
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
@@ -2000,12 +2066,12 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
   //         // Reload the user to get the latest status
   //         await FirebaseAuth.instance.currentUser?.reload();
   //         final user = FirebaseAuth.instance.currentUser;
-          
+
   //         if (user?.emailVerified == true) {
   //           timer.cancel();
   //           isVerified = true;
   //           Navigator.of(context).pop(); // Close verification dialog
-            
+
   //           // Update the user's verification status in Firestore
   //           await FirebaseFirestore.instance
   //               .collection('users')
@@ -2098,7 +2164,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
   //   }
   // }
 
-  // void _showEmailVerificationDialog(BuildContext context) async { 
+  // void _showEmailVerificationDialog(BuildContext context) async {
   //   bool isVerified = false;
   //   Timer? timer;
 
@@ -2111,12 +2177,12 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
   //         // Reload the user to get the latest status
   //         await FirebaseAuth.instance.currentUser?.reload();
   //         final user = FirebaseAuth.instance.currentUser;
-          
+
   //         if (user?.emailVerified == true) {
   //           timer.cancel();
   //           isVerified = true;
   //           Navigator.of(context).pop(); // Close verification dialog
-            
+
   //           // Update the user's verification status in Firestore
   //           await FirebaseFirestore.instance
   //               .collection('users')
@@ -2209,125 +2275,125 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
   //   }
   // }
 
-  void _showEmailVerificationDialog(BuildContext context) async { 
-  bool isVerified = false;
-  Timer? timer;
+  void _showEmailVerificationDialog(BuildContext context) async {
+    bool isVerified = false;
+    Timer? timer;
 
-  await showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      // Start a timer to check email verification status
-      timer = Timer.periodic(Duration(seconds: 2), (timer) async {
-        try {
-          // Reload the user to get the latest status
-          await FirebaseAuth.instance.currentUser?.reload();
-          final user = FirebaseAuth.instance.currentUser;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        // Start a timer to check email verification status
+        timer = Timer.periodic(Duration(seconds: 2), (timer) async {
+          try {
+            // Reload the user to get the latest status
+            await FirebaseAuth.instance.currentUser?.reload();
+            final user = FirebaseAuth.instance.currentUser;
 
-          print('Email verified: ${user?.emailVerified}');
-          
-          if (user?.emailVerified == true) {
-            timer.cancel(); // Stop the timer
-            isVerified = true;
+            print('Email verified: ${user?.emailVerified}');
 
-            //Navigator.of(context).pop(); // Close the verification dialog
-            
-            // Update the user's verification status in Firestore
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user?.uid)
-                .update({'isEmailVerified': true});
-            
-            print('Email verification status updated in Firestore.');
+            if (user?.emailVerified == true) {
+              timer.cancel(); // Stop the timer
+              isVerified = true;
 
-            // Show success dialog
-            _showSuccessDialog(context);
+              //Navigator.of(context).pop(); // Close the verification dialog
+
+              // Update the user's verification status in Firestore
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user?.uid)
+                  .update({'isEmailVerified': true});
+
+              print('Email verification status updated in Firestore.');
+
+              // Show success dialog
+              _showSuccessDialog(context);
+            }
+          } catch (e) {
+            print('Error checking email verification: $e');
           }
-        } catch (e) {
-          print('Error checking email verification: $e');
-        }
-      });
+        });
 
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28.0),
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.email,
-              color: Theme.of(context).colorScheme.primary,
-              size: 30,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Verify Your Email',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28.0),
+          ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.email,
                 color: Theme.of(context).colorScheme.primary,
+                size: 30,
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'A verification email has been sent to your email address.\n\nPlease check your inbox and click the verification link.',
-              style: TextStyle(fontSize: 16, color: Colors.black),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
-        actionsPadding: EdgeInsets.symmetric(horizontal: 10),
-        actions: [
-          Center(
-            child: TextButton(
-              onPressed: () {
-                timer?.cancel();
-                Navigator.of(context).pop();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => logIn()),
-                  (Route<dynamic> route) => false,
-                );
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              SizedBox(width: 10),
+              Text(
+                'Verify Your Email',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              child: Text(
-                'Verify Later',
-                style: TextStyle(fontSize: 16),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'A verification email has been sent to your email address.\n\nPlease check your inbox and click the verification link.',
+                style: TextStyle(fontSize: 16, color: Colors.black),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              CircularProgressIndicator(),
+            ],
+          ),
+          actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+          actions: [
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  timer?.cancel();
+                  Navigator.of(context).pop();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => logIn()),
+                    (Route<dynamic> route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Verify Later',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-
-  // Clean up timer if dialog is dismissed
-  timer?.cancel();
-
-  // If user didn't verify email, navigate to login
-  if (!isVerified) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => logIn()),
-      (Route<dynamic> route) => false,
+          ],
+        );
+      },
     );
+
+    // Clean up timer if dialog is dismissed
+    timer?.cancel();
+
+    // If user didn't verify email, navigate to login
+    if (!isVerified) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => logIn()),
+        (Route<dynamic> route) => false,
+      );
+    }
   }
-}
 
   Widget _buildInputField(
     BuildContext context, {
@@ -2377,7 +2443,7 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
             decoration: InputDecoration(
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary, 
+                  color: Theme.of(context).colorScheme.primary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -2410,9 +2476,11 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               hintText: hintText, // Set hint text
             ),
-            keyboardType: TextInputType.numberWithOptions(decimal: true), // Allow decimal numbers
+            keyboardType: TextInputType.numberWithOptions(
+                decimal: true), // Allow decimal numbers
             inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')), // Allow only numbers and a single decimal point
+              FilteringTextInputFormatter.allow(RegExp(
+                  r'^\d*\.?\d*')), // Allow only numbers and a single decimal point
             ],
             style: TextStyle(
               fontSize: 18,
@@ -2424,6 +2492,4 @@ class _DiabetesManagementPageState extends State<DiabetesManagementPage> {
       ),
     );
   }
-} 
-
-
+}

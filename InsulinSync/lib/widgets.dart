@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_health_connect/flutter_health_connect.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-
+import 'package:insulin_sync/MainNavigation.dart';
 import 'excercise.dart';
 import 'models/carbohydrate_model.dart';
 import 'models/glucose_model.dart';
@@ -13,6 +13,13 @@ import 'models/meal_model.dart';
 import 'models/workout_model.dart';
 import 'services/user_service.dart';
 import 'main.dart';
+import 'editNote.dart';
+import 'editInsulin.dart';
+import 'editGlucose.dart';
+import 'editPhysicalActivity.dart';
+import 'edittNutritions.dart';
+import 'Cart.dart';
+import 'models/foodItem_model.dart';
 
 class CustomTextFormField extends StatefulWidget {
   final TextEditingController controller;
@@ -186,15 +193,19 @@ class MyBackButton extends StatelessWidget {
 class ExpandableItem extends StatefulWidget {
   final String title;
   final String time;
+  final DateTime date;
   final Map<String, dynamic> otherAttributes;
   final String dataType;
+  final String? id;
 
   const ExpandableItem({
     required this.title,
     required this.time,
     required this.otherAttributes,
+    this.id,
     Key? key,
     required this.dataType,
+    required this.date,
   }) : super(key: key);
 
   @override
@@ -296,31 +307,33 @@ class _ExpandableItemState extends State<ExpandableItem> {
               .map(
                 (entry) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (entry.key != 'comment')
-                        Text(
-                          entry.key == 'foodItems'
-                              ? 'Added Ingredients'
-                              : '${capitalizeFirstLetter(entry.key)} ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 13,
-                          ),
-                        ),
-                      Expanded(
-                        child: Text(
-                          getTextForEntry(entry),
-                          textAlign: entry.key == 'comment'
-                              ? TextAlign.left
-                              : TextAlign.right,
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: (entry.key != 'id')
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (entry.key != 'comment')
+                              Text(
+                                entry.key == 'foodItems'
+                                    ? 'Added Ingredients'
+                                    : '${capitalizeFirstLetter(entry.key)} ',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                getTextForEntry(entry),
+                                textAlign: entry.key == 'comment'
+                                    ? TextAlign.left
+                                    : TextAlign.right,
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        )
+                      : SizedBox(),
                 ),
               )
               .toList(),
@@ -365,6 +378,381 @@ class _ExpandableItemState extends State<ExpandableItem> {
               ],
             ),
           ],
+          SizedBox(height: 10),
+          if (widget.otherAttributes["source"] != "Health Connect")
+            if (widget.date.year == DateTime.now().year &&
+                widget.date.month == DateTime.now().month &&
+                widget.date.day == DateTime.now().day)
+              Column(children: [
+                Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(height: 3),
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: () async {
+                        print("delete");
+
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                                contentPadding: EdgeInsets.all(16),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 80,
+                                        backgroundColor:
+                                            Color.fromARGB(41, 248, 77, 117),
+                                        child: Icon(
+                                          Icons.delete_outline,
+                                          size: 80,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .error,
+                                        ),
+                                      ),
+                                      SizedBox(height: 20),
+                                      Text(
+                                        'Are You Sure?',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: 30),
+
+                                      // Buttons
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
+                                        children: [
+                                          // Cancel button
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                side: BorderSide(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .error),
+                                                backgroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                minimumSize: Size(120, 44),
+                                              ),
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                  backgroundColor: Colors.white,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 20),
+                                          //confirm
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () {
+                                                print("confirm");
+
+                                                UserService userService =
+                                                    UserService();
+                                                switch (widget.dataType) {
+                                                  case 'Note':
+                                                    print("note");
+
+                                                    print(widget.id);
+
+                                                    if (widget.id != null) {
+                                                      String id = widget.id!;
+                                                      userService
+                                                          .deleteNote(id);
+                                                    }
+
+                                                  case 'GlucoseReading':
+                                                    print("delte glucose");
+                                                    print("id");
+                                                    print(widget.id);
+
+                                                    if (widget.id != null) {
+                                                      String id = widget.id!;
+                                                      print(userService
+                                                          .deleteGlucoseReading(
+                                                              id));
+                                                      print("fin");
+                                                      print(id);
+                                                    }
+                                                    break;
+
+                                                  case 'meal':
+                                                    print("meal");
+
+                                                    if (widget.id != null) {
+                                                      print("id found");
+                                                      print(widget.id);
+                                                      String id = widget.id!;
+                                                      print(userService
+                                                          .deleteMeal(id));
+                                                      print("fin");
+                                                    }
+
+                                                    break;
+
+                                                  case 'InsulinDosage':
+                                                    print("InsulinDosage");
+
+                                                    if (widget.id != null) {
+                                                      String id = widget.id!;
+                                                      userService
+                                                          .deleteInsulinDosage(
+                                                              id);
+                                                    }
+
+                                                    break;
+
+                                                  case 'Workout':
+                                                    if (widget.id != null) {
+                                                      String id = widget.id!;
+                                                      userService
+                                                          .deleteWorkout(id);
+                                                    }
+
+                                                    break;
+
+                                                  default:
+                                                    print(
+                                                        'No delete action defined for this entry type.');
+                                                }
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          MainNavigation()),
+                                                  (Route<dynamic> route) =>
+                                                      false,
+                                                );
+                                              },
+                                              style: OutlinedButton.styleFrom(
+                                                backgroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                side: BorderSide(
+                                                    color: Color(0xFF023B96)),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                minimumSize: Size(120, 44),
+                                              ),
+                                              child: Text(
+                                                'Confirm',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ));
+                          },
+                        );
+                      },
+                    ),
+                    SizedBox(width: 10),
+                    IconButton(
+                      icon: Icon(Icons.edit),
+                      onPressed: () {
+                        print("edit");
+
+                        switch (widget.dataType) {
+                          case 'GlucoseReading':
+                            print("glucose");
+
+                            if (widget.id != null) {
+                              String glucoseid = widget.id!;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => editGlucose(
+                                    time: widget.date,
+                                    title: widget.title,
+                                    id: glucoseid,
+                                    glucoseReading:
+                                        widget.otherAttributes["reading"],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            break;
+
+                          case 'Note':
+                            print("note");
+
+                            print(widget.time);
+
+                            if (widget.id != null) {
+                              String noteid = widget.id!;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => editNote(
+                                    time: widget.date,
+                                    title: widget.title,
+                                    comment: widget.otherAttributes["comment"],
+                                    id: noteid,
+                                  ),
+                                ),
+                              );
+                            }
+
+                          case 'meal':
+                            print("meal");
+                            print(widget.otherAttributes);
+                            if (widget.otherAttributes["foodItems"][0]
+                                    ['portion'] ==
+                                -1) {
+                              print("CARB");
+                              if (widget.id != null) {
+                                String mealid = widget.id!;
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => edittNutrition2(
+                                        time: widget.date,
+                                        title: widget.title,
+                                        id: mealid,
+                                        carb:
+                                            widget.otherAttributes["foodItems"]
+                                                [0]['carb'],
+                                        protein:
+                                            widget.otherAttributes["foodItems"]
+                                                [0]['protein'],
+                                        fat: widget.otherAttributes["foodItems"]
+                                            [0]['fat'],
+                                        calorie:
+                                            widget.otherAttributes["foodItems"]
+                                                [0]['calorie']),
+                                  ),
+                                );
+                              }
+//add
+                            } else {
+                              print("real meal");
+                              if (widget.id != null) {
+                                String mealid = widget.id!;
+
+                                List<foodItem>? foodItems =
+                                    (widget.otherAttributes["foodItems"]
+                                            as List<Map<String, dynamic>>?)
+                                        ?.map((item) {
+                                  return foodItem(
+                                    name: item['name'] as String,
+                                    portion:
+                                        (item['portion'] as num).toDouble(),
+                                    protein:
+                                        (item['protein'] as num).toDouble(),
+                                    fat: (item['fat'] as num).toDouble(),
+                                    carb: (item['carb'] as num).toDouble(),
+                                    calorie:
+                                        (item['calorie'] as num).toDouble(),
+                                    source: item['source'] as String,
+                                    imageUrl: item['imageUrl'] as String?,
+                                  );
+                                }).toList();
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => Cart(
+                                      foodItems: foodItems,
+                                      time: widget.date,
+                                      title: widget.title,
+                                      id: mealid,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                            break;
+
+                          case 'InsulinDosage':
+                            print(widget.otherAttributes);
+
+                            if (widget.id != null) {
+                              String dosageid = widget.id!;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => editInsulin(
+                                    type: widget.otherAttributes["type"],
+                                    dosage: widget.otherAttributes["dosage"],
+                                    time: widget.date,
+                                    title: widget.title,
+                                    id: dosageid,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            break;
+
+                          case 'Workout':
+                            print("workout");
+                            print(widget.otherAttributes);
+                            if (widget.id != null) {
+                              String glucoseid = widget.id!;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => editPhysicalActivity(
+                                    time: widget.date,
+                                    title: widget.title,
+                                    id: glucoseid,
+                                    duration:
+                                        widget.otherAttributes["duration"],
+                                    type: widget.otherAttributes["intensity"],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            break;
+
+                          default:
+                            print(
+                                'No delete action defined for this entry type.');
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ])
         ],
       ),
     );
@@ -534,6 +922,8 @@ class _DateEntryWidgetState extends State<DateEntryWidget> {
                 ...widget.entries.map((entry) {
                   return ExpandableItem(
                     dataType: '${entry.runtimeType}',
+                    id: entry.id ?? 'No ID',
+                    date: entry.time,
                     title: entry.title ?? 'No Title',
                     time: DateFormat('HH:mm').format(
                       entry.time is Timestamp
@@ -749,6 +1139,10 @@ class _LogbookWidgetState extends State<LogbookWidget> {
                                   ...meals,
                                 ];
 
+                                for (var r in glucoseReadings) {
+                                  print("@%#@#%%% ${r.id}");
+                                }
+
                                 combinedEntries = filterEntriesForSpecificDate(
                                     combinedEntries);
                                 combinedEntries
@@ -842,13 +1236,15 @@ class _LogbookWidgetState extends State<LogbookWidget> {
 class SelectedDateWidget extends StatelessWidget {
   final DateTime? selectedDate;
   final VoidCallback onDateSelected;
-  final VoidCallback onClearDate;
+  final VoidCallback? onClearDate;
+  // final bool allowsClear;
 
   const SelectedDateWidget({
     Key? key,
     required this.selectedDate,
     required this.onDateSelected,
-    required this.onClearDate,
+    this.onClearDate,
+    // required this.allowsClear,
   }) : super(key: key);
 
   @override
@@ -895,13 +1291,14 @@ class SelectedDateWidget extends StatelessWidget {
                   Row(
                     children: [
                       if (selectedDate != null)
-                        IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            size: 20,
+                        if (onClearDate != null)
+                          IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              size: 20,
+                            ),
+                            onPressed: onClearDate,
                           ),
-                          onPressed: onClearDate,
-                        ),
                       Icon(
                         Icons.arrow_drop_down,
                       ),

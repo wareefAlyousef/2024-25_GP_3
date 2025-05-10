@@ -5,11 +5,14 @@ class meal {
   DateTime time;
   String title;
   List<foodItem> foodItems;
+  String? id;
 
   meal({
+    // Make it optional
     required this.time,
     required this.title,
     required this.foodItems,
+    this.id,
   });
 
   double get totalCarb {
@@ -28,12 +31,11 @@ class meal {
     return foodItems.fold(0, (sum, item) => sum + item.calorie);
   }
 
-  factory meal.fromMap(Map<dynamic, dynamic> map) {
+  factory meal.fromMap(Map<dynamic, dynamic> map, {String? id}) {
     return meal(
+      id: map['id'],
       time: (map['time'] as Timestamp).toDate(),
       title: map['title'] ?? '',
-
-      // Handle foodItems as references or sub-collections
       foodItems: map['foodItems'] != null
           ? (map['foodItems'] as List<dynamic>)
               .map((item) => foodItem.fromMap(item as Map<String, dynamic>))

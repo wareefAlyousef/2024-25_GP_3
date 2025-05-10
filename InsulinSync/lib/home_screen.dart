@@ -1,40 +1,36 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_health_connect/flutter_health_connect.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:insulin_sync/AddCarb.dart';
 import 'package:insulin_sync/AddInsulin.dart';
-import 'package:insulin_sync/history.dart';
+import 'package:insulin_sync/MainNavigation.dart';
+import 'package:insulin_sync/global_state.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
-import '../excercise.dart';
-import '../models/carbohydrate_model.dart';
-import '../models/workout_model.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:store_redirect/store_redirect.dart';
+
+import '../excercise.dart';
 import '../models/glucose_model.dart';
+import '../models/workout_model.dart';
+import '../services/auth_service.dart';
+import '../widgets.dart';
 import 'AddGlucose.dart';
 import 'AddNote.dart';
 import 'AddPhysicalActivity.dart';
+import 'Cart.dart';
+import 'addnNutrition2.dart';
+
+import 'corrDose.dart';
+import 'corrfact.dart';
 import 'glucoseChart.dart';
+import 'models/insulin_model.dart';
 import 'services/cgm_auth_service.dart';
 import 'services/user_service.dart';
-import 'models/note_model.dart';
-import 'models/insulin_model.dart';
-import '../widgets.dart';
-import 'package:store_redirect/store_redirect.dart';
-import 'Cart.dart';
 import 'splash.dart';
-import 'AddBySearch.dart';
-import 'package:insulin_sync/MainNavigation.dart';
-import 'addnNutrition2.dart';
 
 // A class for mapping integer trend arrow values to corresponding Flutter icons.
 class ArrowIconMapper {
@@ -109,9 +105,11 @@ class _HomeState extends State<Home> {
 
   late UserService userService;
   CGMAuthService cgmAuthService = CGMAuthService();
+  CorrFact correctionFactorCalculator = CorrFact();
 
   Map<String, double> _data = {'Low': 0, 'In-Range': 0, 'High': 0};
   bool _isLoading = true;
+  // bool _showBox = true;
 
   void initState() {
     userService = UserService();
@@ -124,7 +122,14 @@ class _HomeState extends State<Home> {
 
     syncInsulinDosagesBolus = insulinDosages(context, 'Bolus');
     syncInsulinDosagesBasal = insulinDosages(context, 'Basal');
-    getTotalMeal = userService.getTotalMeal(onlyToday: true);
+    getTotalMeal = userService.getTotalMeal(
+        startDate: DateTime.now().subtract(Duration(days: 1)),
+        endDate: DateTime.now());
+    userService.startGlucoseMonitoring();
+
+    bool _showBox = true;
+
+    CorrectionDose();
 
     super.initState();
 
@@ -153,6 +158,7 @@ class _HomeState extends State<Home> {
 
   @override
   void dispose() {
+    userService.stopGlucoseMonitoring();
     super.dispose();
   }
 
@@ -181,6 +187,14 @@ class _HomeState extends State<Home> {
     } catch (e) {
       return false;
     }
+  }
+
+  Future<void> _loadCorrectionBoxState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      showCorrectionBox = prefs.getBool('showCorrectionBox') ?? false;
+    });
   }
 
 // Method to redirect user to the store to download health connect
@@ -676,7 +690,7 @@ class _HomeState extends State<Home> {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => Cart()),
+                        MaterialPageRoute(builder: (context) => Cart(id: "-1")),
                       ).then((onValue) {
                         _refreshData();
                       });
@@ -1031,47 +1045,7 @@ class _HomeState extends State<Home> {
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.black),
                                           ),
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.logout_rounded,
-                                              size: 30.0,
-                                            ),
-                                            onPressed: () async {
-                                              await _showConfirmationDialogLogout(
-                                                  authService);
-                                            },
-                                          )
                                         ]))),
-                            Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Align(
-                                  alignment: AlignmentDirectional(1, 0),
-                                  child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
-                                        0, 0, 23, 20),
-                                    child: GestureDetector(
-                                      onTap: () async {
-                                        bool isConnected =
-                                            await userService.isCgmConnected();
-                                        if (isConnected) {
-                                          await showSlideShowOverlaySignedIn(
-                                              context);
-                                        } else {
-                                          showSlideShowOverlay(context);
-                                        }
-                                      },
-                                      child: FaIcon(
-                                        FontAwesomeIcons.dotCircle,
-                                        color: Theme.of(context).primaryColor,
-                                        size: 25,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
                             Padding(
                                 padding: EdgeInsets.all(16.0),
                                 child: Container(
@@ -1231,15 +1205,18 @@ class _HomeState extends State<Home> {
                                                                       ),
                                                                     ]));
                                                           } else {
-                                                            return Container(
-                                                                height: 90,
-                                                                color: Color(
-                                                                    0xffA6A6A6), // Set the background color for the entire row
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .all(
-                                                                        8.0), // Optional: Add padding around the Row
-                                                                child: Row(
+                                                            return Stack(
+                                                              children: [
+                                                                // Main Container with glucose info
+                                                                Container(
+                                                                  height: 90,
+                                                                  color: const Color(
+                                                                      0xffA6A6A6), // Background color
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          8.0), // Padding around the Row
+                                                                  child: Row(
                                                                     mainAxisSize:
                                                                         MainAxisSize
                                                                             .max,
@@ -1247,51 +1224,109 @@ class _HomeState extends State<Home> {
                                                                         MainAxisAlignment
                                                                             .center,
                                                                     children: [
-                                                                      Text(
+                                                                      const Text(
                                                                         '-',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
                                                                               40.0,
-
                                                                           color:
-                                                                              Colors.white, // Ensure contrast against the green background
+                                                                              Colors.white, // Ensure contrast
                                                                         ),
                                                                       ),
-                                                                      SizedBox(
-                                                                        width:
-                                                                            10,
-                                                                      ),
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              10),
                                                                       Column(
                                                                         mainAxisSize:
                                                                             MainAxisSize.max,
                                                                         mainAxisAlignment:
                                                                             MainAxisAlignment.center,
                                                                         children: [
-                                                                          // StreamBuilder for arrow icon
-
                                                                           Row(
-                                                                            children: [
+                                                                            children: const [
                                                                               Text(
                                                                                 ' ',
                                                                                 style: TextStyle(
                                                                                   fontSize: 40.0,
-
-                                                                                  color: Colors.white, // Ensure contrast against the green background
+                                                                                  color: Colors.white,
                                                                                 ),
                                                                               ),
                                                                               Text(
                                                                                 'mg/dL',
                                                                                 style: TextStyle(
                                                                                   fontSize: 25,
-                                                                                  color: Colors.white, // Set text color to contrast with the background
+                                                                                  color: Colors.white,
                                                                                 ),
                                                                               ),
                                                                             ],
                                                                           ),
                                                                         ],
                                                                       ),
-                                                                    ]));
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              20),
+                                                                    ],
+                                                                  ),
+                                                                ),
+
+                                                                // Positioned info icon in the top-right corner
+                                                                Positioned(
+                                                                  top:
+                                                                      8, // Adjust the top position
+                                                                  right:
+                                                                      8, // Adjust the right position
+                                                                  child:
+                                                                      Visibility(
+                                                                    visible: glucoseSnapshot
+                                                                            .error ==
+                                                                        'check internet', // Show only if error exists
+                                                                    child:
+                                                                        GestureDetector(
+                                                                      onTap:
+                                                                          () {
+                                                                        _showInfo(
+                                                                          context,
+                                                                          'Sensor Disconnected',
+                                                                          Padding(
+                                                                            padding:
+                                                                                const EdgeInsets.all(16.0),
+                                                                            child:
+                                                                                RichText(
+                                                                              text: TextSpan(
+                                                                                style: TextStyle(fontSize: 14, color: Colors.black),
+                                                                                children: [
+                                                                                  TextSpan(
+                                                                                    text: "Possible causes:\n\n",
+                                                                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                                                  ),
+                                                                                  TextSpan(text: "● The sensor has expired, been removed, or is damaged.\n\n"),
+                                                                                  TextSpan(text: "● Bluetooth is turned off or experiencing interference.\n\n"),
+                                                                                  TextSpan(text: "● The phone lost connection with the sensor or is out of range.\n\n"),
+                                                                                ],
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                      child:
+                                                                          const Icon(
+                                                                        Icons
+                                                                            .info_outline,
+                                                                        color: Color.fromRGBO(
+                                                                            96,
+                                                                            106,
+                                                                            133,
+                                                                            1),
+                                                                        // TODO size not consistent but was so small before
+                                                                        size:
+                                                                            20.0,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            );
                                                           }
                                                         },
                                                       );
@@ -1388,27 +1423,6 @@ class _HomeState extends State<Home> {
                                                                                 showSlideShowOverlay(context);
                                                                               },
                                                                           ),
-                                                                          TextSpan(
-                                                                            text:
-                                                                                '\n\nor by clicking',
-                                                                            style:
-                                                                                TextStyle(fontWeight: FontWeight.bold), // Style for CGM text if needed
-                                                                          ),
-                                                                          WidgetSpan(
-                                                                            child:
-                                                                                Padding(
-                                                                              padding: const EdgeInsets.only(left: 4.0), // Space between CGM and icon
-                                                                              child: FaIcon(
-                                                                                FontAwesomeIcons.dotCircle,
-                                                                                color: Theme.of(context).primaryColor,
-                                                                                size: 18,
-                                                                              ),
-                                                                            ),
-                                                                          ),
-                                                                          TextSpan(
-                                                                            text:
-                                                                                ' at the upper right corner',
-                                                                          ),
                                                                         ],
                                                                       ),
                                                                     )),
@@ -1420,6 +1434,236 @@ class _HomeState extends State<Home> {
                                                     ))))
                                       ]),
                                 )),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 1.0),
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color.fromARGB(255, 255, 247, 239),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      blurRadius: 4.0,
+                                      color: Color(0x33000000),
+                                      offset: Offset(0.0, 2.0),
+                                    ),
+                                  ],
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                                child: FutureBuilder<InsulinDosage?>(
+                                  future: CorrectionDose(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return Container(
+                                        padding: const EdgeInsets.all(16.0),
+                                        decoration: BoxDecoration(
+                                          color: Colors
+                                              .white, // White background while loading
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              blurRadius: 4.0,
+                                              color: Color(0x33000000),
+                                              offset: Offset(0.0, 2.0),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    } else if (snapshot.hasData &&
+                                        snapshot.data != null &&
+                                        showCorrectionBox == true) {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFFFFF7F0),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.0),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.05),
+                                                      blurRadius: 8,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        16, 16, 16, 16),
+                                                child: Column(
+                                                  children: [
+                                                    const SizedBox(
+                                                        height: 15.0),
+                                                    Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        SizedBox(width: 3.0),
+                                                        const Icon(
+                                                            Icons
+                                                                .warning_amber_rounded,
+                                                            color:
+                                                                Colors.orange,
+                                                            size: 30.0),
+                                                        const SizedBox(
+                                                            width: 12.0),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              const Text(
+                                                                "Your glucose is high.",
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .orange,
+                                                                  fontSize:
+                                                                      15.5,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 4.0),
+                                                              const Text(
+                                                                "Do you want to take a correction dose?",
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .orange,
+                                                                  fontSize:
+                                                                      14.0,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 8.0),
+                                                              Align(
+                                                                alignment: Alignment
+                                                                    .centerLeft,
+                                                                child:
+                                                                    TextButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    InsulinDosage?
+                                                                        insulinDosage =
+                                                                        await CorrectionDose();
+                                                                    if (insulinDosage !=
+                                                                        null) {
+                                                                      Navigator
+                                                                          .push(
+                                                                        context,
+                                                                        MaterialPageRoute(
+                                                                          builder: (context) =>
+                                                                              corrDose(
+                                                                            insulinDosage:
+                                                                                insulinDosage,
+                                                                          ),
+                                                                        ),
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  style: TextButton
+                                                                      .styleFrom(
+                                                                    backgroundColor: Colors
+                                                                        .orange
+                                                                        .withOpacity(
+                                                                            0.1),
+                                                                    padding: const EdgeInsets
+                                                                        .symmetric(
+                                                                        horizontal:
+                                                                            12,
+                                                                        vertical:
+                                                                            6),
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              9.0),
+                                                                    ),
+                                                                  ),
+                                                                  child:
+                                                                      const Text(
+                                                                    "Yes",
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color: Colors
+                                                                          .orange,
+                                                                      fontSize:
+                                                                          14.0,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w600,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Positioned(
+                                                top: 4,
+                                                right: 4,
+                                                child: IconButton(
+                                                  icon: const Icon(Icons.close,
+                                                      size: 20.0),
+                                                  color: Colors.grey[700],
+                                                  onPressed: () async {
+                                                    SharedPreferences prefs =
+                                                        await SharedPreferences
+                                                            .getInstance();
+                                                    await prefs.setString(
+                                                        'LastWarning',
+                                                        DateTime.now()
+                                                            .toIso8601String());
+                                                    await prefs.setBool(
+                                                        'showCorrectionBox',
+                                                        false);
+
+                                                    setState(() {
+                                                      showCorrectionBox = false;
+                                                    });
+                                                  },
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      return SizedBox.shrink();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
                             Padding(
                               padding: EdgeInsets.all(16.0),
                               child: Container(
@@ -1833,7 +2077,7 @@ class _HomeState extends State<Home> {
                                                                                   0.0),
                                                                               child: showHealthData([
                                                                                 HealthConnectDataType.TotalCaloriesBurned
-                                                                              ], burned?.toInt(), "kcal", hasBurnedPermission, "Srource of burned calories", "This data is obtained from the workout sessions tracked by Health Connect."))))
+                                                                              ], burned?.toInt(), "kcal", hasBurnedPermission, "Source of burned calories", "This data is obtained from the workout sessions tracked by Health Connect."))))
                                                                 ])
                                                           ]))
                                                 ]))),
@@ -1969,6 +2213,7 @@ class _HomeState extends State<Home> {
                                                   } else {
                                                     final totalNutrition =
                                                         snapshot.data!;
+
                                                     return Row(
                                                       mainAxisAlignment:
                                                           MainAxisAlignment
@@ -2078,7 +2323,7 @@ class _HomeState extends State<Home> {
               child: Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 25.0),
                 child: FutureBuilder<double>(
-                  future: userService.getTotalDosages(type),
+                  future: userService.getTotalDosages(type, DateTime.now()),
                   builder:
                       (BuildContext context, AsyncSnapshot<double> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -3360,5 +3605,242 @@ class _HomeState extends State<Home> {
         );
       },
     );
+  }
+
+  Future<InsulinDosage?> CorrectionDose() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? lastWarning = prefs.getString('LastWarning');
+
+    if (lastWarning == null) {
+      DateTime twelveHoursAgo = DateTime.now().subtract(Duration(hours: 12));
+      String twelveHoursAgoString = twelveHoursAgo.toIso8601String();
+
+      await prefs.setString('LastWarning', twelveHoursAgoString);
+      await prefs.setBool('showCorrectionBox', true);
+    } else {
+      DateTime lastWarningTime = DateTime.parse(lastWarning);
+      DateTime now = DateTime.now();
+
+      Duration difference = now.difference(lastWarningTime);
+
+      if (difference.inMinutes > 15) {
+        await prefs.setBool('showCorrectionBox', true);
+      } else {}
+    }
+
+    showCorrectionBox = prefs.getBool('showCorrectionBox') ?? false;
+
+    // Fetch correction ratio
+    double? correctionRatio =
+        await userService.getUserAttribute('correctionRatio') as double?;
+
+    // Fetch glucose level
+
+    Map<String, int> glucoseData = await userService.fetchCurrentGlucose();
+    double? currentBG = glucoseData['value']?.toDouble();
+
+    // Fetch "manual" glucose readings within the last 15 minutes
+    final Stream<List<GlucoseReading>> manualGlucoseStream =
+        await userService.getGlucoseReadingsStream(source: 'manual');
+
+    List<GlucoseReading> manualReadings = [];
+
+    // Get the most recent snapshot from the stream
+    final List<GlucoseReading> readings = await manualGlucoseStream.first;
+
+    // Calculate the cutoff time
+    final DateTime now = DateTime.now();
+    final DateTime cutoffTime = now.subtract(const Duration(minutes: 15));
+
+    //Filter readings within the last 15 minutes
+    final List<GlucoseReading> recentReadings =
+        readings.where((reading) => reading.time.isAfter(cutoffTime)).toList();
+
+    // Update `currentBG` if there are recent readings
+    if (recentReadings.isNotEmpty) {
+      currentBG = recentReadings.last.reading;
+    }
+
+    // Fetch correction ratio
+    double? tempCF = 0.0;
+    tempCF = await correctionFactorCalculator.calculateCorrectionFactor({
+      'time_of_day': DateFormat.Hm().format(DateTime.now()),
+      'blood_glucose': currentBG!,
+      'weighted_exercise_sum': await calculateWeightedExerciseSum(),
+    }) as double?;
+
+    if (tempCF != null) {
+      if (tempCF > 30 && tempCF < 70) {
+        correctionRatio = tempCF;
+      }
+    }
+
+    if (currentBG == null || correctionRatio == null) {
+      return null;
+    }
+
+    // Set target BG
+    double targetBG = 120.0;
+    double corrDose = 0.0;
+
+    // First: BG higher than 180
+    if (currentBG! > 180) {
+      // Second: Check for boluses in last 3 hours
+      List<InsulinDosage> RecentBolus = await getBolusesInLastHours(3);
+
+      if (RecentBolus.isEmpty) {
+        List<Workout> recentWorkouts = await getExercisesInLastHours(1);
+
+        if (recentWorkouts.isEmpty) {
+          // Calculate correction dose
+          corrDose = (currentBG! - targetBG) / correctionRatio!;
+
+          // Get the decimal part of the dose
+          double decimalPart = corrDose % 1;
+
+          // First check: ends with .1, .2, or .3
+          if (decimalPart <= 0.3) {
+            // Round down to whole unit
+            corrDose = corrDose.floor().toDouble();
+          }
+
+          // Second check: ends with .4, .5, .6, or .7
+          if (decimalPart >= 0.4 && decimalPart <= 0.7) {
+            // Round to half unit (0.5)
+            corrDose = corrDose.floor() + 0.5;
+          }
+
+          // For all other cases (.8, .9)
+          // Round up to whole unit
+          corrDose = corrDose.ceil().toDouble();
+
+          InsulinDosage dosage = InsulinDosage(
+            title: 'Meal Bolus',
+            type: 'bolus',
+            dosage: corrDose,
+            time: now,
+            glucoseAtTime: true && currentBG != null
+                ? GlucoseReading(
+                    source: '',
+                    time: DateTime.now(),
+                    reading: currentBG!,
+                    title: 'Current BG')
+                : null,
+          );
+
+          return dosage;
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<List<Workout>> getExercisesInLastHours(int hours) async {
+    try {
+      final DateTime now = DateTime.now();
+      final DateTime checkTime = now.subtract(Duration(hours: hours));
+
+      // Create a completer to handle the async stream
+      final Completer<List<Workout>> completer = Completer<List<Workout>>();
+
+      // Subscribe to the workouts stream
+      userService.getWorkoutsStream().listen(
+        (List<Workout> workouts) {
+          // Filter workouts that ended in the last 'hours' timeframe
+          final List<Workout> recentWorkouts = workouts.where((workout) {
+            // Calculate workout end time
+            DateTime workoutEndTime =
+                workout.time.add(Duration(minutes: workout.duration));
+
+            // Check if workout ended after the check time and before now
+            return workoutEndTime.isAfter(checkTime) &&
+                workoutEndTime.isBefore(now);
+          }).toList();
+
+          // Complete with the list of recent workouts
+          completer.complete(recentWorkouts);
+        },
+        onError: (error) {
+          completer.completeError(error); // Forward the error
+        },
+      );
+
+      return completer.future;
+    } catch (e) {
+      print('Error fetching recent exercises: $e');
+      return [];
+    }
+  }
+
+  Future<List<InsulinDosage>> getBolusesInLastHours(int hours) async {
+    try {
+      final DateTime now = DateTime.now();
+      final DateTime checkTime = now.subtract(Duration(hours: hours));
+
+      final List<InsulinDosage> dosages = await userService.getInsulinDosages();
+      return dosages
+          .where((dosage) =>
+              dosage.type.toLowerCase() == 'bolus' &&
+              dosage.time.isAfter(checkTime))
+          .toList();
+    } catch (e) {
+      print('Error fetching recent boluses: $e');
+      return [];
+    }
+  }
+
+  Future<double> calculateWeightedExerciseSum() async {
+    try {
+      var referenceTime = DateTime.now();
+      // Fetch exercise data from the 16 hours prior to the reference time
+      DateTime exerciseStartTime = referenceTime.subtract(Duration(hours: 16));
+      List<Workout> workouts = await userService.getWorkoutsStream().first;
+
+      List<Map<String, dynamic>> exerciseData = workouts
+          .where((workout) =>
+              workout.time.isAfter(exerciseStartTime) &&
+              workout.time.isBefore(referenceTime))
+          .map((workout) {
+        int intensityCode;
+        switch (workout.intensity) {
+          case 'High':
+            intensityCode = 6;
+            break;
+          case 'Moderate':
+            intensityCode = 3;
+            break;
+          case 'Low':
+            intensityCode = 1;
+            break;
+          default:
+            intensityCode = 0;
+        }
+        return {
+          'time': workout.time,
+          'duration': workout.duration.toDouble(),
+          'intensity': intensityCode,
+        };
+      }).toList();
+
+      // Calculate weighted exercise sum
+      double weightedExerciseSum = 0.0;
+      for (var exercise in exerciseData) {
+        DateTime exerciseTime = exercise['time'];
+        double duration = exercise['duration'];
+        int intensity = exercise['intensity'];
+        double timeDifference =
+            referenceTime.difference(exerciseTime).inMinutes.toDouble();
+
+        if (timeDifference > 0) {
+          weightedExerciseSum += (intensity * duration) / timeDifference;
+        }
+      }
+
+      return weightedExerciseSum;
+    } catch (e) {
+      print('Error calculating weighted exercise sum: $e');
+      return 0.0;
+    }
   }
 }

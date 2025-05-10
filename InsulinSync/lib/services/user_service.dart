@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'dart:math';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart' as firebase_database;
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:notification_permissions/notification_permissions.dart';
+import '../home_widget.dart';
+import '../home_widget_config.dart';
 import '../models/carbohydrate_model.dart';
 import '../models/contact_model.dart';
 import '../models/user_model.dart';
@@ -17,6 +22,10 @@ import '../models/workout_model.dart';
 import "../models/meal_model.dart";
 import "../models/foodItem_model.dart";
 import 'package:http/http.dart' as http;
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -27,14 +36,20 @@ class UserService {
 
   StreamController<double>? _glucoseStreamController;
   StreamController<int>? _arrowStreamController;
-  Timer? _glucoseTimer;
+  Timer? glucoseTimer;
 
   Stream<double> get glucoseStream =>
       _glucoseStreamController!.stream.asBroadcastStream();
   Stream<int> get arrowStream =>
       _arrowStreamController!.stream.asBroadcastStream();
 
-  UserService() {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  final bool Function()? isAppInForeground; // Callback to check app state
+  final void Function(int reading)? updateGlucoseReadingBackground;
+
+  UserService({this.isAppInForeground, this.updateGlucoseReadingBackground}) {
     currentUserId = _auth.currentUser?.uid;
     _glucoseStreamController = StreamController<double>();
     _arrowStreamController = StreamController<int>();
@@ -43,6 +58,16 @@ class UserService {
   Future<void> createUser(UserModel user) async {
     if (currentUserId == null) return;
     await _firestore.collection('users').doc(currentUserId).set(user.toMap());
+  }
+
+  void clearUser() {
+    currentUserId = null;
+    glucoseTimer?.cancel();
+    glucoseTimer = null;
+    _glucoseStreamController?.close();
+    _glucoseStreamController = null;
+    _arrowStreamController?.close();
+    _arrowStreamController = null;
   }
 
   Stream<UserModel> getUser() {
@@ -103,10 +128,14 @@ class UserService {
       final firebase_database.DataSnapshot snapshot = event.snapshot;
 
       if (snapshot.exists && snapshot.children.isNotEmpty) {
-        final readingsList = snapshot.children
-            .map((childSnapshot) => GlucoseReading.fromMap(
-                childSnapshot.value as Map<dynamic, dynamic>))
-            .toList();
+        final readingsList = snapshot.children.map((childSnapshot) {
+          // Convert the dynamic map to Map<String, dynamic>
+          final readingData = Map<String, dynamic>.from(
+              childSnapshot.value as Map<dynamic, dynamic>);
+          // Add the ID (key) to the data
+          readingData['id'] = childSnapshot.key;
+          return GlucoseReading.fromMap(readingData);
+        }).toList();
 
         return readingsList;
       } else {
@@ -118,6 +147,22 @@ class UserService {
     }
   }
 
+  Future<bool> deleteGlucoseReading(String readingId) async {
+    if (currentUserId == null || readingId.isEmpty) {
+      return false;
+    }
+    try {
+      await _database
+          .child('users/$currentUserId/glucose_readings/$readingId')
+          .remove();
+      return true; // Return true if the operation was successful
+    } catch (e) {
+      // Handle the error if needed (e.g., logging)
+      print('Error deleting glucose reading: $e');
+      return false; // Return false if there was an error
+    }
+  }
+
   Stream<List<GlucoseReading>> getGlucoseReadingsStream({String? source}) {
     if (currentUserId == null) {
       return Stream.value([]);
@@ -126,16 +171,33 @@ class UserService {
     firebase_database.Query query =
         _database.child('users/$currentUserId/glucose_readings');
 
-    // Apply the filter if a source is provided
     if (source != null) {
       query = query.orderByChild('source').equalTo(source);
     }
 
     return query.onValue.map((event) {
       final readingsList = event.snapshot.children
-          .map((snapshot) => GlucoseReading.fromMap(
-              snapshot.value as Map<dynamic, dynamic>)) // Cast here
-          .toList();
+          .map((snapshot) {
+            final data = snapshot.value as Map<dynamic, dynamic>?;
+
+            // Ensure the data is not null and contains required fields
+            if (data != null &&
+                data.containsKey('reading') &&
+                data.containsKey('time') &&
+                data.containsKey('title') &&
+                data.containsKey('source')) {
+              return GlucoseReading.fromMap(data);
+            } else {
+              print('Invalid glucose reading data: $data');
+              return null; // Skip invalid data
+            }
+          })
+          .whereType<GlucoseReading>()
+          .toList(); // Filter out null values
+      if (!event.snapshot.exists || event.snapshot.value == null) {
+        return <GlucoseReading>[];
+      }
+
       return readingsList;
     });
   }
@@ -218,15 +280,270 @@ class UserService {
     }
   }
 
-  Future<void> fetchCurrentGlucose() async {
+  Future<void> initializeNotifications() async {
+    const AndroidInitializationSettings androidInitSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidInitSettings);
+
+    await flutterLocalNotificationsPlugin.initialize(initSettings);
+  }
+
+  Future<void> showNotification(String title, String body) async {
+    if (currentUserId == null) {
+      return;
+    }
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'alert2', // Channel ID
+      'alert2', // Channel name
+      channelDescription:
+          'Channel for critical alerts with sound and vibration',
+      importance: Importance.max, // Ensures it's high priority
+      priority: Priority.high, // Pushes it to the top
+      fullScreenIntent: true,
+      sound: RawResourceAndroidNotificationSound('alert'), // Custom sound
+      enableVibration: true, // Enables vibration
+      playSound: true,
+      autoCancel: true,
+      ticker: 'alert2',
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+        0, title, body, notificationDetails);
+  }
+
+  Timer? timer;
+
+  Future<void> saveDate(DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Convert DateTime to ISO8601 string
+    await prefs.setString('last_notified', date.toIso8601String());
+    if (_auth.currentUser?.uid == null) {
+      await prefs.remove('last_notified');
+    }
+  }
+
+  Future<DateTime?> getSavedDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateString = prefs.getString('last_notified');
+    if (dateString != null) {
+      return DateTime.parse(dateString);
+    }
+    return null;
+  }
+
+  Future<bool> notifyContacts(int value) async {
     try {
-      if (currentUserId == null) return;
+      List<Contact> contacts = await getContacts();
+      if (contacts.isEmpty) return true;
+
+      for (Contact contact in contacts) {
+        if ((value > contact.maxThreshold || value < contact.minThreshold) &&
+            contact.sendNotifications &&
+            contact.status == 'ready') {
+          DateTime? lastNotified = contact.lastNotified;
+          if (lastNotified != null) {
+            if (DateTime.now().difference(lastNotified).inMinutes < 30) {
+              print(
+                  '${contact.name} already notified within the last 30 minutes.');
+              continue;
+            }
+            print('Will send message to ${contact.name}.');
+          }
+
+          contact.lastNotified = DateTime.now();
+
+          bool messageSent = await sendWhatsAppMessage(contact, value.toInt());
+          if (messageSent) {
+            updateContact(contact);
+          }
+        }
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> sendWhatsAppMessage(Contact contact, int reading) async {
+    String contactPhoneNumber = contact.phoneNumber;
+    String conatctName = contact.name;
+
+    // Twilio credentials
+    final accountSid = dotenv.env['TWILIO_SID'];
+    ;
+    final authToken = dotenv.env['TWILIO_AUTH_TOKEN'];
+    final fromWhatsApp = 'whatsapp:+14155238886'; // Twilio sandbox number
+    final toWhatsApp = 'whatsapp:$contactPhoneNumber';
+
+    var t = DateTime.now();
+    var date = DateFormat('yyyy-MM-dd').format(t);
+
+    // Encode your Twilio credentials for basic auth
+    final credentials = base64Encode(utf8.encode('$accountSid:$authToken'));
+
+    // Twilio API endpoint
+    final url = Uri.parse(
+        'https://api.twilio.com/2010-04-01/Accounts/$accountSid/Messages.json');
+
+    try {
+      String firstName = await getUserAttribute('firstName') as String;
+      String lastName = await getUserAttribute('lastName') as String;
+
+      String message =
+          "Urgent: $firstName $lastName's Glucose Level Alert \n\nHi $conatctName, \n\n$firstName $lastName's glucose level is currently $reading mg/dL. Please contact them immediately to ensure they are safe.\n\nInsulinSync app";
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Basic $credentials',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'From': fromWhatsApp,
+          'To': toWhatsApp,
+          'Body': message,
+        },
+      );
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        print('Message sent! SID: ${responseData['sid']}');
+        return true;
+      } else {
+        print('Failed to send message. Status code: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error sending message: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isPhoneNumberExists(String phoneNumber,
+      {String? excludeContactId}) async {
+    if (currentUserId == null) return false;
+
+    try {
+      // Create a query for contacts with the same phone number
+      var query = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('contacts')
+          .where('phoneNumber', isEqualTo: phoneNumber);
+
+      // If we're excluding a specific contact (for edits), add that condition
+      if (excludeContactId != null) {
+        query =
+            query.where(FieldPath.documentId, isNotEqualTo: excludeContactId);
+      }
+
+      // Execute the query
+      final querySnapshot = await query.get();
+
+      // Return true if any documents match (meaning the phone number exists)
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking phone number existence: $e');
+      return false; // Assume no duplicate in case of error
+    }
+  }
+
+  void requestFollow(Contact contact) async {
+    String contactPhoneNumber = contact.phoneNumber;
+    String ContactName = contact.name;
+
+    // Twilio credentials
+    final accountSid = dotenv.env['TWILIO_SID'];
+    ;
+    final authToken = dotenv.env['TWILIO_AUTH_TOKEN'];
+    final fromWhatsApp = 'whatsapp:+14155238886';
+    final toWhatsApp = 'whatsapp:$contactPhoneNumber';
+
+    var t = DateTime.now();
+    var date = DateFormat('yyyy-MM-dd').format(t);
+
+    String firstName = await getUserAttribute('firstName') as String;
+    String lastName = await getUserAttribute('lastName') as String;
+
+    // Encode your Twilio credentials for basic auth
+    final credentials = base64Encode(utf8.encode('$accountSid:$authToken'));
+
+    // Twilio API endpoint
+    final url = Uri.parse(
+        'https://api.twilio.com/2010-04-01/Accounts/$accountSid/Messages.json');
+
+    try {
+      String message =
+          'Request to Become ${firstName} $lastName\'s Emergency Contact\n\nHi $ContactName,\n\n${firstName} $lastName would like to add you as an emergency contact in their InsuslinSync application. This means you\'ll be notified if their glucose levels are abnormal.\n\nIf you\'re comfortable with this, please confirm by clicking "OK". If you do not wish to be an emergency contact, you can decline by replying with "Decline".\n\nInsulinSync app';
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Basic $credentials',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'From': fromWhatsApp,
+          'To': toWhatsApp,
+          'Body': message,
+        },
+      );
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        print('Message sent! SID: ${responseData['sid']}');
+
+        await _firestore
+            .collection('pending_requests')
+            .doc(responseData['sid'])
+            .set({
+          'user': currentUserId,
+          'to': toWhatsApp,
+          'time': DateTime.now(),
+        });
+      } else {
+        print('Failed to send message. Status code: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending message: $e');
+    }
+  }
+
+  updateWidget(
+      int glucoseValue, int arrowDirection, Color backgroundColor) async {
+    HomeWidgetConfig.update(HomeWidget(
+      arrowDirection: arrowDirection,
+      glucoseValue: glucoseValue,
+      backgroundColor: backgroundColor,
+    ));
+  }
+
+  Future<Map<String, int>> fetchCurrentGlucose(
+      {bool isBackgroundTask = false}) async {
+    var currentId = currentUserId = _auth.currentUser?.uid;
+
+    if (currentId == null) {
+      return {"value": -1, "arrow": -1};
+    }
+    try {
+      if (currentUserId == null) {
+        return {'value': -1, 'arrow': -1};
+      }
 
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult.contains(ConnectivityResult.none)) {
+        print('No internet connectivity');
         _glucoseStreamController!.addError('-');
         _arrowStreamController!.addError('');
-        return;
+        return {'value': -1, 'arrow': -1};
       }
 
       // Retrieve token and patientId from Firestore
@@ -238,12 +555,14 @@ class UserService {
       final accountId = userDoc.data()?['libreAccountId'];
 
       if (token == null || patientId == null) {
+        print('Debug background: Token or patientId is null');
         _glucoseStreamController!.addError('-');
         _arrowStreamController!.addError('');
-        return; // Return early to avoid making the API request
+        return {
+          'value': -1,
+          'arrow': -1
+        }; // Return early to avoid making the API request
       }
-
-      print(' token $token      patientid $patientId');
 
       try {
         final headers = {
@@ -257,13 +576,12 @@ class UserService {
           'Account-Id': '$accountId'
         };
 
+        // Making API request to LibreView
         final response = await http.get(
           Uri.parse(
               'https://api-eu.libreview.io/llu/connections/${patientId}/graph'),
           headers: headers,
         );
-
-        print(' respose ${response.body}');
 
         if (response.statusCode == 200) {
           // Parse the response body as JSON
@@ -274,29 +592,40 @@ class UserService {
               responseData['data']['connection']['glucoseMeasurement'];
 
           if (glucoseData != null) {
-            print(' glucoseData $glucoseData');
+            // print('Debug background: glucoseData available: $glucoseData');
 
             final dateFormat = DateFormat('MM/dd/yyyy h:mm:ss a');
 
             final rawTimestamp = "${glucoseData['Timestamp']}";
+            print('Debug background: rawTimestamp: $rawTimestamp');
 
             final parsedDate = dateFormat.parse(rawTimestamp);
+            print('Debug background: parsedDate: $parsedDate');
 
             final now = DateTime.now();
+            print('Debug background: current time: $now');
 
-            // Check if the time difference is within 2 minutes
-            if (now.difference(parsedDate).inMinutes.abs() >= 2) {
-              // Todo modify
+            final differenceInMinutes =
+                now.difference(parsedDate).inMinutes.abs();
+            print(
+                'Debug background: time difference in minutes: $differenceInMinutes');
+
+            if (differenceInMinutes >= 2) {
+              print('Debug background: data is too old (≥2 minutes)');
               _glucoseStreamController!.addError('check internet');
               _arrowStreamController!.addError('');
-              return;
+              return {'value': -1, 'arrow': -1};
             }
 
             final glucoseLevel = glucoseData['Value'];
             final arrow = glucoseData['TrendArrow'];
+            print(
+                'Debug background: glucoseLevel: $glucoseLevel, arrow: $arrow');
+
             _arrowStreamController!.add(arrow.toInt());
             _glucoseStreamController!.add(glucoseLevel.toDouble());
 
+            print('Debug background: Updating Firestore with new glucose data');
             // Save the glucose data with the formatted time
             await _firestore.collection('users').doc(currentUserId).update({
               'cgm_data.current': {
@@ -305,38 +634,143 @@ class UserService {
                 'trendArrow': arrow,
               }
             });
+
+            print('Debug background: Successfully returning glucose data');
+
+            return {"value": glucoseLevel.toInt(), "arrow": arrow.toInt()};
           } else {
+            print('No glucose data available in response');
             _glucoseStreamController!.addError('-');
             _arrowStreamController!.addError('');
+            return {'value': -1, 'arrow': -1};
           }
         } else {
+          print('API request failed with status code ${response.statusCode}');
           _glucoseStreamController!.addError('-');
           _arrowStreamController!.addError('');
+          return {'value': -1, 'arrow': -1};
         }
       } catch (e, stack) {
+        print('Debug background: Exception in API request: $e');
+        print('Debug background: Stack trace: $stack');
         _glucoseStreamController!.addError(e);
         _arrowStreamController!.addError('');
+        return {'value': -1, 'arrow': -1};
       }
     } catch (e) {
+      print('Debug background: Outer exception: $e');
       _glucoseStreamController!.addError('-');
       _arrowStreamController!.addError('');
+      return {'value': -1, 'arrow': -1};
     }
   }
 
   // Start periodic glucose fetching
-  void startPeriodicGlucoseFetch() {
-    if (_glucoseTimer != null) {
-      return; // Timer is already running
-    }
-// TODO change to 10 seconds
-    _glucoseTimer = Timer.periodic(Duration(seconds: 10), (_) {
-      fetchCurrentGlucose(); // Fetch glucose every 30 seconds
+  void startPeriodicGlucoseFetch({bool isBackgroundTask = false}) {
+    // Return if timer is already running
+    if (glucoseTimer != null) return;
+
+    int? minRange;
+    int? maxRange;
+
+    // Set up periodic glucose check every 10 seconds
+    glucoseTimer = Timer.periodic(Duration(seconds: 10), (_) async {
+      // Check user authentication
+      var currentId = currentUserId = _auth.currentUser?.uid;
+      if (currentId == null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('last_notified');
+
+        updateGlucoseReadingBackground!(-1);
+
+        // Clean up timer if not in background mode
+        if (!isBackgroundTask) {
+          glucoseTimer?.cancel();
+          glucoseTimer = null;
+        }
+        return;
+      }
+
+      // Fetch current glucose reading
+      var result =
+          await fetchCurrentGlucose(isBackgroundTask: isBackgroundTask);
+      var value = result['value'];
+      var arrow = result['arrow'];
+
+      // Handle invalid readings
+      if (value == null || arrow == null || arrow == -1 || value == -1) {
+        updateGlucoseReadingBackground!(-1);
+        await updateWidget(-1, -1, Color(0xffA6A6A6));
+        return;
+      }
+
+      // Update background notification with current reading
+      updateGlucoseReadingBackground?.call(value);
+
+      // Notify emergency contacts
+      await notifyContacts(value);
+
+      // Skip notifications if app is in foreground
+      if (isAppInForeground?.call() == true) {
+        return;
+      }
+
+      maxRange = await getUserAttribute('maxRange') as int?;
+      minRange = await getUserAttribute('minRange') as int?;
+
+      if (minRange == null || maxRange == null) {
+        return;
+      }
+
+      // Determine background color
+      late Color backgroundColor;
+
+      if (value <= minRange!) {
+        backgroundColor = Color(0xffE50000); // Red
+      } else if (value >= maxRange!) {
+        backgroundColor = Color(0xffFFB732); // Orange
+      } else {
+        backgroundColor = Color(0xff99CC99); // Green
+      }
+
+      await updateWidget(value!, arrow, backgroundColor);
+
+      // Skip alert logic if not in background mode
+      if (!isBackgroundTask) {
+        return;
+      }
+
+      final lastNotified = await getSavedDate();
+      final now = DateTime.now();
+
+      // Send high glucose alert if needed
+      if (value > maxRange! &&
+          (lastNotified == null ||
+              now.difference(lastNotified).inMinutes >= 15)) {
+        await showNotification(
+          "High Glucose Alert",
+          "Your glucose level is $value mg/dL\n"
+              "This is above your normal range of $minRange-$maxRange mg/dL.\n",
+        );
+        await saveDate(now);
+      }
+      // Send low glucose alert if needed
+      else if (value < minRange! &&
+          (lastNotified == null ||
+              now.difference(lastNotified).inMinutes >= 15)) {
+        await showNotification(
+          "Low Glucose Alert",
+          "Your glucose level is $value mg/dL\n"
+              "This is below your normal range of $minRange-$maxRange mg/dL.\n",
+        );
+        await saveDate(now);
+      }
     });
   }
 
   // Stop periodic glucose fetching when no longer needed
   void stopPeriodicGlucoseFetch() {
-    _glucoseTimer?.cancel();
+    glucoseTimer?.cancel();
   }
 
   void dispose() {
@@ -566,25 +1000,6 @@ class UserService {
 
   ///////////////////////
 
-  // Future<bool> addNote(Note note) async {
-  //   // Check if the currentUserId is null
-  //   if (currentUserId == null) {
-  //     return false; // Return false if user is not authenticated
-  //   }
-
-  //   try {
-  //     // Attempt to update the user's notes in Firestore
-  //     await _firestore.collection('users').doc(currentUserId).update({
-  //       'notes': FieldValue.arrayUnion([note.toMap()]),
-  //     });
-  //     return true; // Return true if the addition is successful
-  //   } catch (e) {
-  //     // Log the error or handle it as needed
-  //     print('Error adding note: $e');
-  //     return false; // Return false if there was an error
-  //   }
-  // }
-
   Future<bool> addNote(Note note) async {
     // Check if the currentUserId is null
     if (currentUserId == null) {
@@ -599,8 +1014,6 @@ class UserService {
           .collection('notes')
           .doc(); // Auto-generate an ID for the note
 
-      // Assign the auto-generated ID to the note object (optional)
-
       // Add the note document to Firestore
       await noteRef.set(note.toMap());
       return true; // Return true if the addition is successful
@@ -610,39 +1023,6 @@ class UserService {
       return false; // Return false if there was an error
     }
   }
-
-// Future<List<Note>> getNotes() async {
-//     if (currentUserId == null) {
-//       return [];
-//     }
-
-//     var result = await Connectivity().checkConnectivity();
-//     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-//     var options = null;
-//     if (!hasInternetConnection) {
-//       options = GetOptions(source: Source.cache);
-//     }
-
-//     try {
-//       DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-//           .instance
-//           .collection('users')
-//           .doc(currentUserId)
-//           .get(options);
-
-//       if (snapshot.exists &&
-//           snapshot.data() != null &&
-//           snapshot.data()!.containsKey('notes')) {
-//         List<dynamic> notes = snapshot['notes'] ?? [];
-//         return notes.map((map) => Note.fromMap(map)).toList();
-//       } else {
-//         return [];
-//       }
-//     } catch (e) {
-//       print('Error getting notes: $e');
-//       return [];
-//     }
-//   }
 
   Future<List<Note>> getNotes() async {
     if (currentUserId == null) {
@@ -676,38 +1056,6 @@ class UserService {
     }
   }
 
-// Stream<List<Note>> getNotesStream() {
-//     if (currentUserId == null) {
-//       // Return a stream that emits an empty list when there's no user
-//       return Stream.value(<Note>[]);
-//     }
-
-//     return _firestore
-//         .collection('users')
-//         .doc(currentUserId)
-//         .snapshots()
-//         .map((snapshot) {
-//       try {
-//         // Attempt to get data from the snapshot
-//         final data = snapshot.data();
-
-//         // If 'notes' field is missing or not a List, return an empty list
-//         if (data == null || data['notes'] == null || data['notes'] is! List) {
-//           return <Note>[];
-//         }
-
-//         // Safely map the 'notes' field to a list of Note objects
-//         List<dynamic> notes = data['notes'];
-//         return notes
-//             .map((map) => Note.fromMap(map as Map<String, dynamic>))
-//             .toList();
-//       } catch (e) {
-//         // If any error occurs, return an empty list
-//         return <Note>[];
-//       }
-//     });
-//   }
-
   Stream<List<Note>> getNotesStream() {
     if (currentUserId == null) {
       // Return a stream that emits an empty list when there's no user
@@ -732,6 +1080,26 @@ class UserService {
         return <Note>[]; // Return an empty list if there's an error
       }
     });
+  }
+
+  Future<bool> deleteNote(String noteId) async {
+    if (currentUserId == null) {
+      return false;
+    }
+
+    try {
+      final noteRef = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('notes')
+          .doc(noteId);
+
+      await noteRef.delete();
+      return true;
+    } catch (e) {
+      print('Error deleting note: $e');
+      return false;
+    }
   }
 
   Future<void> updateNote({
@@ -864,7 +1232,27 @@ class UserService {
     }
   }
 
-  Future<double> getTotalDosages(String type) async {
+  Future<bool> deleteInsulinDosage(String dosageId) async {
+    if (currentUserId == null) {
+      return false;
+    }
+
+    try {
+      final dosageRef = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('insulin_dosages')
+          .doc(dosageId);
+
+      await dosageRef.delete();
+      return true;
+    } catch (e) {
+      print('Error deleting insulin dosage: $e');
+      return false;
+    }
+  }
+
+  Future<double> getTotalDosages(String type, DateTime day) async {
     List<InsulinDosage> insulinList = await getInsulinDosages();
 
     if (insulinList.isEmpty) {
@@ -873,8 +1261,7 @@ class UserService {
 
     double totalDosages = 0.0;
 
-    DateTime today = DateTime.now();
-    DateTime startOfDay = DateTime(today.year, today.month, today.day);
+    DateTime startOfDay = DateTime(day.year, day.month, day.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
 
     for (InsulinDosage dosage in insulinList) {
@@ -894,8 +1281,6 @@ class UserService {
     if (currentUserId == null) return false;
 
     try {
-      // TODO remove
-      print("addWorkout 1");
       // Add the workout as a new document in the 'workouts' sub-collection
       await _firestore
           .collection('users')
@@ -961,6 +1346,30 @@ class UserService {
         return <Workout>[];
       }
     });
+  }
+
+  Future<bool> deleteWorkout(String workoutId) async {
+    // Check if the currentUserId is null
+    if (currentUserId == null) {
+      return false; // Return false if user is not authenticated
+    }
+
+    try {
+      // Reference to the workout document to be deleted
+      final workoutRef = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('workouts')
+          .doc(workoutId); // Use the provided workout ID
+
+      // Delete the workout document from Firestore
+      await workoutRef.delete();
+      return true; // Return true if the deletion is successful
+    } catch (e) {
+      // Log the error or handle it as needed
+      print('Error deleting workout: $e');
+      return false; // Return false if there was an error
+    }
   }
 
 //////////////////
@@ -1060,28 +1469,25 @@ class UserService {
   }
 
 //////////////////
-  Future<bool> addMeal(meal meal) async {
+
+  Future<String?> addMeal(meal meal) async {
     if (currentUserId == null) {
-      return false; // Return false if currentUserId is null
+      return null; // Return null if currentUserId is null
     }
 
     try {
-      // Add the meal with an array of references to 'foodItems' sub-collection documents
+      // Add the meal to Firestore and get the reference
       var mealRef = await _firestore
           .collection('users')
           .doc(currentUserId)
           .collection('meals')
           .add(meal.toMap());
 
-      // If foodItems are provided, add them to the 'foodItems' sub-collection
-      for (var foodItem in meal.foodItems) {
-        await mealRef.collection('foodItems').add(foodItem.toMap());
-      }
-
-      return true; // Return true if the operation was successful
+      // Return the generated meal ID
+      return mealRef.id;
     } catch (e) {
       print('Error adding meal: $e');
-      return false; // Return false if there was an error
+      return null; // Return null if there was an error
     }
   }
 
@@ -1095,7 +1501,7 @@ class UserService {
         hasInternetConnection ? null : GetOptions(source: Source.cache);
 
     try {
-      // Fetch all meals from the 'meals' sub-collection
+      // Fetch all meals from the 'meals' collection
       final querySnapshot = await _firestore
           .collection('users')
           .doc(currentUserId)
@@ -1104,16 +1510,8 @@ class UserService {
 
       List<meal> mealsList = [];
       for (var doc in querySnapshot.docs) {
-        // Fetch foodItems for each meal document from its own 'foodItems' sub-collection
-        final foodItemsSnapshot =
-            await doc.reference.collection('foodItems').get();
-        List<foodItem> foodItems = foodItemsSnapshot.docs
-            .map((foodDoc) =>
-                foodItem.fromMap(foodDoc.data() as Map<String, dynamic>))
-            .toList();
-
-        // Add the meal with its food items to the list
-        mealsList.add(meal.fromMap(doc.data() as Map<String, dynamic>));
+        // Add the meal directly (no need to fetch foodItems here)
+        mealsList.add(meal.fromMap(doc.data()..['id'] = doc.id));
       }
 
       return mealsList;
@@ -1138,74 +1536,383 @@ class UserService {
       List<meal> mealsList = [];
 
       for (var doc in querySnapshot.docs) {
-        // Fetch foodItems for each meal document from its own 'foodItems' sub-collection
-        final foodItemsSnapshot =
-            await doc.reference.collection('foodItems').get();
-        List<foodItem> foodItems = foodItemsSnapshot.docs
-            .map((foodDoc) =>
-                foodItem.fromMap(foodDoc.data() as Map<String, dynamic>))
-            .toList();
-
-        // Add the meal with its food items to the list
-        mealsList.add(meal.fromMap(doc.data() as Map<String, dynamic>));
+        // Add the meal directly (no need to fetch foodItems here)
+        mealsList.add(meal.fromMap(doc.data()..['id'] = doc.id));
       }
 
       yield mealsList; // Yield the updated list of meals
     }
   }
 
-  Future<Map<String, double>> getTotalMeal({bool onlyToday = true}) async {
-    List<meal> mealsList = await getMeal();
-
-    if (mealsList.isEmpty) {
-      return {
-        "totalCarb": 0.0,
-        "totalFat": 0.0,
-        "totalProtein": 0.0,
-        "totalCal": 0.0,
-      };
+  Future<bool> deleteMeal(String mealId) async {
+    if (currentUserId == null) {
+      return false;
     }
 
-    double totalCarb = 0.0;
-    double totalFat = 0.0;
-    double totalProtein = 0.0;
-    double totalCal = 0.0;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('meals')
+          .doc(mealId)
+          .delete();
 
-    DateTime today = DateTime.now();
-    DateTime startOfDay = DateTime(today.year, today.month, today.day);
-    DateTime endOfDay = startOfDay.add(Duration(days: 1));
+      return true;
+    } catch (e) {
+      print('Error deleting meal: $e');
+      return false;
+    }
+  }
 
-    for (meal currentMeal in mealsList) {
-      if (onlyToday) {
-        if (currentMeal.time.isAfter(startOfDay) &&
-            currentMeal.time.isBefore(endOfDay)) {
-          for (var foodItem in currentMeal.foodItems) {
-            totalCarb += foodItem.carb;
-            totalFat += foodItem.fat;
-            totalProtein += foodItem.protein;
-            totalCal += foodItem.calorie;
-          }
-        }
-      } else {
-        for (var foodItem in currentMeal.foodItems) {
-          totalCarb += foodItem.carb;
-          totalFat += foodItem.fat;
-          totalProtein += foodItem.protein;
-          totalCal += foodItem.calorie;
-        }
+  Future<Map<String, double>> getTotalMeal({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final meals = await getMeal();
+
+    double carb = 0.0, fat = 0.0, protein = 0.0, calorie = 0.0;
+    final filterStart = startDate;
+    final filterEnd = endDate ?? (startDate?.add(const Duration(days: 1)));
+
+    for (final meal in meals) {
+      // Skip if date filtering is active and meal is outside range
+      if (filterStart != null &&
+          (meal.time.isBefore(filterStart) ||
+              (filterEnd != null && meal.time.isAfter(filterEnd)))) {
+        continue;
+      }
+
+      // Sum all nutrition values directly
+      for (final food in meal.foodItems) {
+        carb += food.carb;
+        fat += food.fat;
+        protein += food.protein;
+        calorie += food.calorie;
       }
     }
 
     return {
-      "totalCarb": totalCarb,
-      "totalFat": totalFat,
-      "totalProtein": totalProtein,
-      "totalCal": totalCal,
+      'totalCarb': carb,
+      'totalFat': fat,
+      'totalProtein': protein,
+      'totalCal': calorie,
     };
   }
 
+  Future<void> updateMeal({
+    required String mealId,
+    String? newTitle,
+    DateTime? newTime,
+    List<foodItem>? newFoodItems,
+  }) async {
+    if (currentUserId == null) return;
+
+    final Map<String, dynamic> updates = {};
+
+    if (newTitle != null) updates['title'] = newTitle;
+    if (newTime != null) updates['time'] = Timestamp.fromDate(newTime);
+    if (newFoodItems != null) {
+      updates['foodItems'] = newFoodItems.map((item) => item.toMap()).toList();
+      updates['totalCarb'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.carb);
+      updates['totalProtein'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.protein);
+      updates['totalFat'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.fat);
+      updates['totalCalorie'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.calorie);
+    }
+
+    if (updates.isNotEmpty) {
+      try {
+        // Update the specific document in the 'meals' sub-collection
+        await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('meals')
+            .doc(mealId)
+            .update(updates);
+      } catch (e) {
+        print('Error updating meal: $e');
+      }
+    }
+  }
+
+///////////////////
+
+// Add FavoriteMeal as meal
+  Future<String?> addToFavorite(meal meal) async {
+    if (currentUserId == null) {
+      return null; // Return null if currentUserId is null
+    }
+
+    try {
+      var mealRef = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favorite_meals')
+          .add(meal.toMap());
+
+      return mealRef.id;
+    } catch (e) {
+      print('Error adding favorite meal: $e');
+      return null;
+    }
+  }
+
+// Get FavoriteMeals as List<meal>
+  Future<List<meal>> getFavoriteMeals() async {
+    if (currentUserId == null) return [];
+
+    var result = await Connectivity().checkConnectivity();
+    bool hasInternetConnection = !result.contains(ConnectivityResult.none);
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favorite_meals')
+          .get(options);
+
+      List<meal> mealsList = [];
+
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id; // Add the document ID to the map
+        mealsList.add(meal.fromMap(data));
+      }
+
+      return mealsList;
+    } catch (e) {
+      print('Error fetching favorite meals: $e');
+      return [];
+    }
+  }
+
+  Stream<List<meal>> getFavoriteMealStream() async* {
+    if (currentUserId == null) {
+      yield <meal>[];
+      return;
+    }
+
+    await for (var querySnapshot in _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('favorite_meals')
+        .snapshots()) {
+      List<meal> mealsList = [];
+
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id; // Add the document ID to the map
+        mealsList.add(meal.fromMap(data));
+      }
+
+      yield mealsList;
+    }
+  }
+
+// Remove FavoriteMeal as meal
+  Future<bool> removeFromFavorite(String? mealId) async {
+    print('Debug fav: Starting removeFromFavorite()');
+    print('Debug fav: currentUserId = $currentUserId');
+    print('Debug fav: mealId = $mealId');
+
+    if (currentUserId == null) {
+      print('Debug fav: currentUserId is null, returning false');
+      return false;
+    }
+
+    try {
+      final userDocRef = _firestore.collection('users').doc(currentUserId);
+      final favMealDocRef = userDocRef.collection('favorite_meals').doc(mealId);
+
+      print(
+          'Debug fav: Deleting from path = users/$currentUserId/favorite_meals/$mealId');
+
+      await favMealDocRef.delete();
+
+      print('Debug fav: Successfully deleted meal from favorites');
+      return true;
+    } catch (e) {
+      print('Debug fav: Error removing favorite meal: $e');
+      return false;
+    }
+  }
+
+// Update FavoriteMeal as meal
+  Future<void> updateFavoriteMeal({
+    required String mealId,
+    String? newTitle,
+    List<foodItem>? newFoodItems,
+  }) async {
+    if (currentUserId == null) return;
+
+    final Map<String, dynamic> updates = {};
+
+    if (newTitle != null) updates['title'] = newTitle;
+    if (newFoodItems != null) {
+      updates['foodItems'] = newFoodItems.map((item) => item.toMap()).toList();
+      updates['totalCarb'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.carb);
+      updates['totalProtein'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.protein);
+      updates['totalFat'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.fat);
+      updates['totalCalorie'] =
+          newFoodItems.fold(0.0, (double sum, item) => sum + item.calorie);
+    }
+
+    if (updates.isNotEmpty) {
+      try {
+        await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('favorite_meals')
+            .doc(mealId)
+            .update(updates);
+      } catch (e) {
+        print('Error updating favorite meal: $e');
+      }
+    }
+  }
+
 //////////////////
-// Add a contact to the Firestore database
+  Future<String?> addItemToFavorite(foodItem item) async {
+    if (currentUserId == null) {
+      return null; // Return null if currentUserId is null
+    }
+
+    try {
+      var foodItemRef = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favorite_food_items')
+          .add(item.toMap());
+
+      return foodItemRef.id;
+    } catch (e) {
+      print('Error adding food item to favorites: $e');
+      return null;
+    }
+  }
+
+  Future<List<foodItem>> getFavoriteFoodItems() async {
+    if (currentUserId == null) return [];
+
+    var result = await Connectivity().checkConnectivity();
+    bool hasInternetConnection = !result.contains(ConnectivityResult.none);
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favorite_food_items')
+          .get(options);
+
+      List<foodItem> foodItemsList = [];
+      for (var doc in querySnapshot.docs) {
+        var foodItemModel =
+            foodItem.fromMap(doc.data() as Map<String, dynamic>);
+        foodItemModel.id = doc.id;
+
+        foodItemsList.add(foodItemModel);
+      }
+
+      return foodItemsList;
+    } catch (e) {
+      print('Error fetching favorite food items: $e');
+      return [];
+    }
+  }
+
+  Stream<List<foodItem>> getFavoriteFoodItemStream() async* {
+    if (currentUserId == null) {
+      yield <foodItem>[];
+      return;
+    }
+
+    await for (var querySnapshot in _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('favorite_food_items')
+        .snapshots()) {
+      List<foodItem> foodItemsList = [];
+
+      for (var doc in querySnapshot.docs) {
+        var foodItemModel =
+            foodItem.fromMap(doc.data() as Map<String, dynamic>);
+        foodItemModel.id = doc.id;
+
+        foodItemsList.add(foodItemModel);
+      }
+
+      yield foodItemsList;
+    }
+  }
+
+  Future<bool> removeItemFromFavorite(String? itemId) async {
+    if (currentUserId == null) {
+      return false;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favorite_food_items')
+          .doc(itemId)
+          .delete();
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> updateFavoriteItem({
+    required String itemId,
+    String? newName,
+    double? newPortion,
+    double? newProtein,
+    double? newFat,
+    double? newCarb,
+    double? newCalorie,
+    String? newSource,
+  }) async {
+    if (currentUserId == null) return;
+
+    final Map<String, dynamic> updates = {};
+
+    if (newName != null) updates['name'] = newName;
+    if (newPortion != null) updates['portion'] = newPortion;
+    if (newProtein != null) updates['protein'] = newProtein;
+    if (newFat != null) updates['fat'] = newFat;
+    if (newCarb != null) updates['carb'] = newCarb;
+    if (newCalorie != null) updates['calorie'] = newCalorie;
+    if (newSource != null) updates['source'] = newSource;
+
+    if (updates.isNotEmpty) {
+      try {
+        await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('favorite_food_items')
+            .doc(itemId)
+            .update(updates);
+      } catch (e) {
+        print('Error updating favorite food item: $e');
+      }
+    }
+  }
+
+/////////////////
+
+  // Add a contact to the Firestore database
   Future<bool> addContact(Contact contact) async {
     if (currentUserId == null) return false; // Return false if user ID is null
 
@@ -1215,7 +1922,8 @@ class UserService {
           .collection('users')
           .doc(currentUserId)
           .collection('contacts')
-          .add(contact.toMap());
+          .doc(contact.id)
+          .set(contact.toMap());
       return true; // Return true if the operation was successful
     } catch (e) {
       print('Error adding contact: $e');
@@ -1223,30 +1931,53 @@ class UserService {
     }
   }
 
-// Fetch all contacts from the Firestore database
-  Future<List<Contact>> getContacts() async {
-    if (currentUserId == null)
-      return []; // Return an empty list if user ID is null
-
-    var result = await Connectivity().checkConnectivity();
-    bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options =
-        hasInternetConnection ? null : GetOptions(source: Source.cache);
+  Future<void> deleteContact(String? id) async {
+    if (currentUserId == null) return;
 
     try {
-      // Fetch all documents in the 'contacts' sub-collection
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('contacts')
+          .doc(id) // Use actual Firestore document ID
+          .delete();
+      print("Contact deleted successfully");
+    } catch (e) {
+      print("Error deleting contact: $e");
+    }
+  }
+
+// Fetch all contacts from the Firestore database
+  Future<List<Contact>> getContacts() async {
+    if (currentUserId == null) {
+      return []; // Return an empty list if user ID is null (user not authenticated)
+    }
+
+    // Check internet connectivity
+    var result = await Connectivity().checkConnectivity();
+    bool hasInternetConnection = result != ConnectivityResult.none;
+
+    // Set Firestore options to use cache if no internet connection
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
+    try {
+      // Fetch contacts from the 'contacts' sub-collection
       final querySnapshot = await _firestore
           .collection('users')
           .doc(currentUserId)
           .collection('contacts')
           .get(options);
 
-      return querySnapshot.docs
-          .map((doc) => Contact.fromMap(doc.data()..['id'] = doc.id))
-          .toList();
+      // Map the fetched documents to a list of Contact objects
+      final contacts = querySnapshot.docs.map((doc) {
+        final contact = Contact.fromMap(doc.data()..['id'] = doc.id);
+        return contact;
+      }).toList();
+
+      return contacts;
     } catch (e) {
       print('Error fetching contacts: $e');
-      return [];
+      return []; // Return an empty list if there was an error
     }
   }
 
@@ -1267,7 +1998,8 @@ class UserService {
       try {
         // Map each document in the snapshot to a Contact object
         return querySnapshot.docs
-            .map((doc) => Contact.fromMap(doc.data()..['id'] = doc.id))
+            .map((doc) =>
+                Contact.fromMap(doc.data()..['id'] = doc.id)) // Pass doc.id
             .toList();
       } catch (e) {
         print('Error processing contacts stream: $e');
@@ -1276,42 +2008,111 @@ class UserService {
     });
   }
 
+  Future<bool> updateContact(Contact updatedContact) async {
+    if (currentUserId == null) return false;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('contacts')
+          .doc(updatedContact.id) // Use contact ID
+          .update(updatedContact.toMap()); // Update fields
+
+      print('Contact updated successfully');
+      return true;
+    } catch (e) {
+      print('Error updating contact: $e');
+      return false;
+    }
+  }
+
+  // Method to check if a meal is already in favorite meals
+  Future<bool> isMealAlreadyFavorite(meal currentMeal) async {
+    try {
+      // Fetch all favorite meals for the current user
+      var querySnapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('favoriteMeals')
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        // Convert the document to a FavoriteMeal object
+        meal favoriteMeal = meal.fromMap(doc.data());
+
+        // Check if the title matches
+        if (favoriteMeal.title == currentMeal.title) {
+          // Check if all foodItems are present
+          if (areFoodItemsEqual(
+              favoriteMeal.foodItems, currentMeal.foodItems)) {
+            return true; // The meal is already in favorites
+          }
+        }
+      }
+
+      return false; // Meal is not in favorites
+    } catch (e) {
+      print("Error checking favorite meals: $e");
+      return false;
+    }
+  }
+
+  // Helper method to compare foodItems in two meals
+  bool areFoodItemsEqual(List<foodItem> foodItems1, List<foodItem> foodItems2) {
+    // Check if both lists have the same length
+    if (foodItems1.length != foodItems2.length) {
+      return false;
+    }
+
+    // Check if each food item in foodItems1 is present in foodItems2
+    for (var item1 in foodItems1) {
+      bool found = false;
+      for (var item2 in foodItems2) {
+        if (item1 == item2) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 //////////////////
 
   Future<dynamic> getUserAttribute(String attribute) async {
     var result = await Connectivity().checkConnectivity();
     bool hasInternetConnection = !result.contains(ConnectivityResult.none);
-    var options = null;
-    if (!hasInternetConnection) {
-      options = GetOptions(source: Source.cache);
-    }
+    var options =
+        hasInternetConnection ? null : GetOptions(source: Source.cache);
 
     if (currentUserId == null) throw Exception("User not authenticated");
 
     final snapshot =
         await _firestore.collection('users').doc(currentUserId).get(options);
 
-    if (snapshot.exists) {
-      final data = snapshot.data();
+    if (!snapshot.exists) return null;
 
-      // If the attribute contains a path (e.g., 'cgm_data/periodic/time')
-      final attributeParts = attribute.split('/'); // Split the attribute by '/'
+    final data = snapshot.data();
 
-      dynamic result = data;
+    if (data == null) return null;
 
-      // Iterate through the path to reach the correct nested field
-      for (var part in attributeParts) {
-        if (result is Map<String, dynamic> && result.containsKey(part)) {
-          result = result[part];
-        } else {
-          throw Exception("Attribute '$attribute' not found");
-        }
+    // Handle nested attributes (e.g., 'cgm_data/periodic/time')
+    final attributeParts = attribute.split('/');
+    dynamic current = data;
+
+    for (var part in attributeParts) {
+      if (current is Map<String, dynamic> && current.containsKey(part)) {
+        current = current[part];
+      } else {
+        return null;
       }
-
-      return result;
-    } else {
-      throw Exception("User data not found");
     }
+
+    return current;
   }
 
   Stream<dynamic> getUserAttributeStream(String attribute) {
@@ -1348,6 +2149,7 @@ class UserService {
     String? token,
     int? minRange,
     int? maxRange,
+    bool? recieveNotifications,
   }) async {
     if (currentUserId == null)
       return false; // Return false if the user ID is null
@@ -1374,6 +2176,8 @@ class UserService {
     if (token != null) updates['token'] = token;
     if (minRange != null) updates['minRange'] = minRange;
     if (maxRange != null) updates['maxRange'] = maxRange;
+    if (recieveNotifications != null)
+      updates['recieveNotifications'] = recieveNotifications;
 
     if (updates.isNotEmpty) {
       try {
@@ -1414,6 +2218,7 @@ class UserService {
       bool? removeToken,
       bool? removeMinRange,
       bool? removeMaxRange,
+      bool? removerecieveNotifications,
       bool? removeCgmData}) async {
     if (currentUserId == null)
       return false; // Return false if the user ID is null
@@ -1437,6 +2242,8 @@ class UserService {
     if (removeToken == true) updates['token'] = FieldValue.delete();
     if (removeMinRange == true) updates['minRange'] = FieldValue.delete();
     if (removeMaxRange == true) updates['maxRange'] = FieldValue.delete();
+    if (removerecieveNotifications == true)
+      updates['recieveNotifications'] = FieldValue.delete();
     if (removeCgmData == true) updates['cgm_data'] = FieldValue.delete();
 
     if (updates.isNotEmpty) {
@@ -1460,5 +2267,54 @@ class UserService {
     }
 
     return false; // Return false if there are no attributes to remove
+  }
+
+  Timer? glucoseWarningTimer;
+
+  void startGlucoseMonitoring() {
+    glucoseWarningTimer = Timer.periodic(Duration(seconds: 10), (_) async {
+      await checkGlucoseAndShowWarning();
+    });
+  }
+
+  Future<void> checkGlucoseAndShowWarning() async {
+    try {
+      int glucoseReading = (await fetchCurrentGlucose())['value'] as int;
+      int maxGlucoseLevel = await getUserAttribute('maxRange') as int;
+
+      if (glucoseReading > maxGlucoseLevel) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? lastWarning = prefs.getString('LastWarning');
+        DateTime now = DateTime.now();
+
+        if (lastWarning != null) {
+          DateTime lastWarningTime = DateTime.parse(lastWarning);
+
+          if (now.difference(lastWarningTime).inMinutes > 15) {
+            prefs.setBool('showCorrectionBox', true);
+            prefs.setString('LastWarning', now.toIso8601String());
+
+            // Notify the background service
+            FlutterBackgroundService().invoke('setLastWarning', {
+              'LastWarning': now.toIso8601String(),
+            });
+          }
+        } else {
+          prefs.setBool('showCorrectionBox', true);
+          prefs.setString('LastWarning', now.toIso8601String());
+
+          // Notify the background service
+          FlutterBackgroundService().invoke('setLastWarning', {
+            'LastWarning': now.toIso8601String(),
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking glucose levels: $e');
+    }
+  }
+
+  void stopGlucoseMonitoring() {
+    glucoseWarningTimer?.cancel();
   }
 }

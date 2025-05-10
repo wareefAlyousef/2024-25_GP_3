@@ -8,6 +8,7 @@ class Workout {
   String? intensity;
   int duration;
   String source;
+  String? id;
 
   Workout({
     required this.title,
@@ -15,10 +16,12 @@ class Workout {
     this.intensity,
     required this.duration,
     required this.source,
+    this.id,
   });
 
-  factory Workout.fromMap(Map<dynamic, dynamic> map) {
+  factory Workout.fromMap(Map<dynamic, dynamic> map,{String? id}) {
     return Workout(
+         id:map['id'],
       title: map['title'] as String,
       time: (map['time'] as Timestamp).toDate(),
       intensity: map['intensity'] as String?,

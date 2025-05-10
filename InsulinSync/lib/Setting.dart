@@ -1,13 +1,17 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:insulin_sync/Account.dart';
+import 'package:insulin_sync/EmergencyContacts.dart';
+import 'package:insulin_sync/ContactUs.dart';
+import 'SettingsTerms.dart';
+import 'package:insulin_sync/Personal.dart';
+import 'package:insulin_sync/diabetes.dart';
+import 'package:insulin_sync/notifications.dart';
 import 'package:provider/provider.dart';
+import 'deleteAccount.dart';
 import 'splash.dart';
 import 'widgets.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
-import '../models/user_model.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'services/cgm_auth_service.dart';
 import 'package:insulin_sync/MainNavigation.dart';
@@ -124,6 +128,8 @@ class _Setting extends State<Setting> {
       },
     );
   }
+
+  _showConfirmationDialogDeleteAccount(AuthService authService) {}
 
   Future<bool> _showConfirmationDialogLibre(String text) async {
     // Show the dialog and await its result
@@ -1411,6 +1417,16 @@ class _Setting extends State<Setting> {
     );
   }
 
+  // List of images and destinations
+  final List<Map<String, dynamic>> gridItems = [
+    {"image": "images/Account.png", "page": Account()},
+    {"image": "images/Personal_Information.png", "page": Personal()},
+    {"image": "images/Diabetes_Info.png", "page": Diabetes()},
+    {"image": "images/Notifications.png", "page": notifications()},
+    {"image": "images/Emergency.png", "page": EmergencyContacts()},
+    {"image": "images/CGM_Connection.png", "isButton": true},
+  ];
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -1451,56 +1467,194 @@ class _Setting extends State<Setting> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 100.0),
-                      ElevatedButton(
-                        onPressed: () async {
-                          bool isConnected = await userService.isCgmConnected();
-                          if (isConnected) {
-                            await showSlideShowOverlaySignedIn(context);
-                          } else {
-                            showSlideShowOverlay(context);
+                      SizedBox(height: 20),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics:
+                            NeverScrollableScrollPhysics(), // Prevent scrolling inside grid
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio:
+                              0.75, // Adjust for image proportions
+                        ),
+                        itemCount: gridItems.length,
+                        itemBuilder: (context, index) {
+                          // Special handling for the CGM connection button
+                          if (gridItems[index]["isButton"] == true) {
+                            return GestureDetector(
+                              onTap: () async {
+                                bool isConnected =
+                                    await userService.isCgmConnected();
+                                if (isConnected) {
+                                  await showSlideShowOverlaySignedIn(context);
+                                } else {
+                                  showSlideShowOverlay(context);
+                                }
+                              },
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                elevation: 3,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Image.asset(
+                                    gridItems[index]["image"],
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
                           }
+
+                          // Normal grid items that navigate to pages
+                          return GestureDetector(
+                            onTap: () {
+                              // Navigate to the specific screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      gridItems[index]["page"],
+                                ),
+                              );
+                            },
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              elevation: 3,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.asset(
+                                  gridItems[index]["image"],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(height: 45.0),
+                      Align(
+                        alignment:
+                            Alignment.centerLeft, // This forces left alignment
+                        child: const Padding(
+                          padding: EdgeInsets.fromLTRB(
+                              16.0, 0.0, 40.0, 5.0), // Added left padding
+                          child: Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: Text(
+                              'Help',
+                              style: TextStyle(
+                                fontSize: 16.0,
+                                color: Color.fromARGB(255, 120, 120, 120),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ContactUsScreen(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.phone_rounded,
+                              color: Color(0xFF023B96), // Icon color
+                              size: 25.0,
+                            ),
+                            SizedBox(width: 10.0),
+                            Text(
+                              'Contact Us',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Color.fromRGBO(
+                                    70, 70, 70, 1), // Darker grey
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          minimumSize:
+                              Size(double.infinity, 60), // Increased height
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16.0),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SettingsTerms(),
+                            ),
+                          );
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             FaIcon(
-                              FontAwesomeIcons.dotCircle,
-                              color: Theme.of(context).primaryColor,
-                              size: 20,
+                              FontAwesomeIcons.fileSignature,
+                              color: Color(0xFF023B96), // Icon color
+                              size: 25.0,
                             ),
                             SizedBox(width: 10.0),
-                            FutureBuilder<bool>(
-                              future: isCgmConnected,
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (snapshot.hasError) {
-                                  return Text(
-                                    'Error',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  );
-                                } else {
-                                  // When connected, show "Disconnect"; otherwise, show "Connect"
-                                  bool connected = snapshot.data ?? false;
-                                  return Text(
-                                    connected
-                                        ? 'Status of CGM connection'
-                                        : 'Connect to CGM',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Color.fromRGBO(
-                                          70, 70, 70, 1), // Darker grey
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  );
-                                }
-                              },
+                            Text(
+                              'Terms and Conditions',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Color.fromRGBO(
+                                    70, 70, 70, 1), // Darker grey
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          minimumSize:
+                              Size(double.infinity, 60), // Increased height
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 45.0),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await _showConfirmationDialogLogout(authService);
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.logout_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                              size: 25.0,
+                            ),
+                            SizedBox(width: 10.0),
+                            Text(
+                              'Sign out',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Theme.of(context).colorScheme.error,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -1516,32 +1670,35 @@ class _Setting extends State<Setting> {
                       SizedBox(height: 16.0),
                       ElevatedButton(
                         onPressed: () async {
-                          await _showConfirmationDialogLogout(authService);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DeleteAccount(),
+                            ),
+                          );
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.logout_rounded,
-                              color: Color(0xFF023B96), // Icon color
-                              size: 25.0,
+                            FaIcon(
+                              FontAwesomeIcons.userTimes,
+                              color: Colors.white,
+                              size: 22.0,
                             ),
                             SizedBox(width: 10.0),
                             Text(
-                              'Log out',
+                              'Delete Account',
                               style: TextStyle(
                                 fontSize: 20,
-                                color: Color.fromRGBO(
-                                    70, 70, 70, 1), // Darker grey
+                                color: Colors.white,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          minimumSize:
-                              Size(double.infinity, 60), // Increased height
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                          minimumSize: Size(double.infinity, 60),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),

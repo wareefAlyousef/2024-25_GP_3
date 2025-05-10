@@ -72,10 +72,12 @@ Future<ui.Image> loadImage(String assetPath) async {
 }
 
 // Method to get workout sessions from health connect
-Future<List<Workout>> fetchWorkouts() async {
+Future<List<Workout>> fetchWorkouts(DateTime date) async {
   try {
-    var startTime = DateTime.now().subtract(const Duration(days: 100));
-    var endTime = DateTime.now();
+    // Define the start and end of the given date
+    DateTime startTime = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    DateTime endTime = startTime.add(const Duration(days: 1)); // end of the day
+
     var val = await HealthConnectFactory.getRecord(
       startTime: startTime,
       endTime: endTime,
@@ -128,13 +130,13 @@ class GlucoseChart extends StatefulWidget {
 }
 
 class _GlucoseChartState extends State<GlucoseChart> {
-  DateTime now = DateTime.now();
+  late DateTime now;
   // Define the start and end times for the first 12 hours and the last 12 hours
-  late final first12Start;
-  late final first12End;
+  late var first12Start;
+  late var first12End;
 
-  late final last12Start;
-  late final last12End;
+  late var last12Start;
+  late var last12End;
 
   List<GlucoseReading> glucoseEntries = [];
   List<InsulinDosage> insulinEntries = [];
@@ -197,7 +199,6 @@ class _GlucoseChartState extends State<GlucoseChart> {
   }
 
   void getInitialPage() {
-    DateTime now = DateTime.now();
     DateTime first12Start = DateTime(now.year, now.month, now.day);
     DateTime first12End = first12Start.add(const Duration(hours: 12));
     DateTime last12Start = first12End;
@@ -221,20 +222,21 @@ class _GlucoseChartState extends State<GlucoseChart> {
 
   @override
   void initState() {
+    now = widget.specificDate;
     super.initState();
 
     glucoseList = userService.getGlucoseReadings(source: 'libreCGM');
     insulinList = userService.getInsulinDosages();
     mealList = userService.getMeal();
     localWorkoutList = userService.getWorkouts();
-    healthConnectWorkoutList = fetchWorkouts();
+    healthConnectWorkoutList = fetchWorkouts(now);
 
     loadImages();
     loadRange();
 
     getInitialPage();
 
-    DateTime now = DateTime.now();
+    // DateTime now = DateTime.now();
     first12Start = DateTime(
         now.year, now.month, now.day, 0, 0, 0, 0); // Start at 12:00 AM today
     first12End = DateTime(now.year, now.month, now.day, 11, 59, 59,
@@ -249,11 +251,24 @@ class _GlucoseChartState extends State<GlucoseChart> {
   @override
   void didUpdateWidget(covariant GlucoseChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    glucoseList = userService.getGlucoseReadings(source: 'libreCGM');
-    insulinList = userService.getInsulinDosages();
-    mealList = userService.getMeal();
-    localWorkoutList = userService.getWorkouts();
-    healthConnectWorkoutList = fetchWorkouts();
+
+    if (widget.specificDate != oldWidget.specificDate) {
+      now = widget.specificDate;
+
+      // Recompute start and end times
+      first12Start = DateTime(now.year, now.month, now.day, 0, 0, 0, 0);
+      first12End = DateTime(now.year, now.month, now.day, 11, 59, 59, 999);
+      last12Start = DateTime(now.year, now.month, now.day, 12, 0, 0, 0);
+      last12End = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
+      glucoseList = userService.getGlucoseReadings(source: 'libreCGM');
+      insulinList = userService.getInsulinDosages();
+      mealList = userService.getMeal();
+      localWorkoutList = userService.getWorkouts();
+      healthConnectWorkoutList = fetchWorkouts(now);
+
+      setState(() {});
+    }
   }
 
   late final PageController _pageController;
@@ -311,8 +326,6 @@ class _GlucoseChartState extends State<GlucoseChart> {
                               healthConnectWorkoutEntries =
                                   workoutSnapshotHealth.data ?? [];
                               glucoseEntries = glucoseSnapshot.data ?? [];
-
-                              print('glucoseSnapshot ${glucoseSnapshot.data}');
 
                               combinedEntries = [
                                 ...insulinEntries,
@@ -586,7 +599,7 @@ class _GlucoseChartState extends State<GlucoseChart> {
 
       // only show a tooltip is the spot belongs to glucose reading
       if (hasBarIndex0) {
-        final now = DateTime.now();
+        // final now = DateTime.now();
 
         bool isFirstHalf =
             DateTime(now.year, now.month, now.day, 0, 0) == start;
@@ -748,8 +761,8 @@ class _GlucoseChartState extends State<GlucoseChart> {
           sideTitles: SideTitles(showTitles: false),
         ),
       ),
-      borderData: FlBorderData(
-          show: true, border: Border.all(color: const Color(0xff37434d))),
+      borderData:
+          FlBorderData(show: true, border: Border.all(color: Colors.grey)),
       minX: 0,
       minY: 0,
       maxY: 350,

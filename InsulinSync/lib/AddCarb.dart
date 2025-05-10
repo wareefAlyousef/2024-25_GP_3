@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulin_sync/MainNavigation.dart';
-import 'home_screen.dart';
-import 'main.dart';
-
 import '../models/carbohydrate_model.dart';
 import '../services/user_service.dart';
 
@@ -53,7 +50,6 @@ class _AddCarb extends State<AddCarb> {
   String? _errorMessage = null; //not in addnote(?)
 
   void _validate() {
-    //not in addnote(?)
     _submitForm();
   }
 
@@ -219,8 +215,7 @@ class _AddCarb extends State<AddCarb> {
                             _submitForm();
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Color(0xFF023B96)),
+                            side: BorderSide(color: Color(0xFF023B96)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -282,11 +277,11 @@ class _AddCarb extends State<AddCarb> {
             );
           },
         );
-         Future.delayed(Duration(seconds: 3), () {
+        Future.delayed(Duration(seconds: 3), () {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => MainNavigation()),
-            (Route<dynamic> route) => false, 
+            (Route<dynamic> route) => false,
           );
         });
       } else {
@@ -342,17 +337,15 @@ class _AddCarb extends State<AddCarb> {
           },
         );
       }
-
-      
-    } else {}
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 240, 240, 240),
+      backgroundColor: Color(0xFFf1f4f8),
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 240, 240, 240),
+        backgroundColor: Color(0xFFf1f4f8),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
@@ -376,7 +369,6 @@ class _AddCarb extends State<AddCarb> {
                 child: Text(
                   'Add Carbs',
                   style: TextStyle(
-                    
                     fontSize: 30, //check with raneem
                     fontWeight: FontWeight.bold,
                     color: Colors.black,

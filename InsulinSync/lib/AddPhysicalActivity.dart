@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulin_sync/MainNavigation.dart';
-import 'home_screen.dart';
-import 'main.dart';
 import '../models/workout_model.dart';
 import '../services/user_service.dart';
+import 'models/meal_model.dart';
+import 'mealDose.dart';
 
 class AddPhysicalActivity extends StatefulWidget {
+  final bool? fromDosePage;
+  final meal? currentMeal;
+  final String? mealId;
+
+  const AddPhysicalActivity(
+      {Key? key, this.fromDosePage, this.currentMeal, this.mealId})
+      : super(key: key);
+
   @override
   _AddPhysicalActivity createState() => _AddPhysicalActivity();
 }
@@ -20,13 +28,16 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
   FocusNode myfocus = FocusNode();
   FocusNode myfocus2 = FocusNode();
 
+  // late bool fromDosePage;
+  // late meal currentMeal;
+  // late String mealId;
+
   final _formKey = GlobalKey<FormState>();
 
   void _showIntensityInfo(BuildContext context) {
     myfocus.unfocus();
     myfocus2.unfocus();
     showDialog(
-    
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -93,9 +104,8 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
           data: ThemeData.light().copyWith(
             primaryColor: Color(0xFF023B96),
             colorScheme: ColorScheme.light(
-              primary: Color(0xFF023B96), 
-
-              secondary: Colors.grey, 
+              primary: Color(0xFF023B96),
+              secondary: Colors.grey,
             ),
             buttonTheme: ButtonThemeData(
               textTheme: ButtonTextTheme.primary,
@@ -293,15 +303,14 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); 
+                            Navigator.of(context).pop();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF023B96),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            minimumSize:
-                                Size(120, 44), 
+                            minimumSize: Size(120, 44),
                           ),
                           child: Text(
                             'Cancel',
@@ -317,17 +326,15 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); 
+                            Navigator.of(context).pop();
                             _submitForm();
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Color(0xFF023B96)),
+                            side: BorderSide(color: Color(0xFF023B96)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            minimumSize:
-                                Size(120, 44), 
+                            minimumSize: Size(120, 44),
                           ),
                           child: Text(
                             'Add',
@@ -351,8 +358,6 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate() && _errorMessage == null) {
-     
-
       DateTime _newDateTime = DateTime(_now.year, _now.month, _now.day,
           _timeOfDay.hour, _timeOfDay.minute, 0);
       double _durationdouble = double.parse(_duration);
@@ -384,14 +389,33 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22),
                   ),
-                         SizedBox(height: 30), 
-          OutlinedButton(
+                  SizedBox(height: 30),
+                  OutlinedButton(
+                    //                   onPressed: () {
+                    //                     Navigator.pushAndRemoveUntil(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => MainNavigation()),
+                    //   (Route<dynamic> route) => false,
+                    // );
+                    //                   },
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
+                      if (widget.fromDosePage == true) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => mealDose(
+                                  currentMeal: widget.currentMeal,
+                                  mealId: widget.mealId)),
+                          (Route<dynamic> route) => false,
+                        );
+                      } else {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => MainNavigation()),
+                          (Route<dynamic> route) => false,
+                        );
+                      }
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Color(0xff023b96),
@@ -405,18 +429,35 @@ class _AddPhysicalActivity extends State<AddPhysicalActivity> {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-        ],
-      ),
-    );
-  },
-);
-Future.delayed(Duration(seconds: 3), () {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => MainNavigation()),
-    (Route<dynamic> route) => false,
-  );
-});
+                ],
+              ),
+            );
+          },
+        );
+// Future.delayed(Duration(seconds: 3), () {
+//   Navigator.pushAndRemoveUntil(
+//     context,
+//     MaterialPageRoute(builder: (context) => MainNavigation()),
+//     (Route<dynamic> route) => false,
+//   );
+// });
+        Future.delayed(Duration(seconds: 3), () {
+          if (widget.fromDosePage == true) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => mealDose(
+                      currentMeal: widget.currentMeal, mealId: widget.mealId)),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => MainNavigation()),
+              (Route<dynamic> route) => false,
+            );
+          }
+        });
       } else {
         showDialog(
           context: context,
@@ -450,14 +491,14 @@ Future.delayed(Duration(seconds: 3), () {
                   // Center the button
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); 
+                      Navigator.of(context).pop();
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Color(0xff023b96),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      minimumSize: Size(100, 44), 
+                      minimumSize: Size(100, 44),
                     ),
                     child: Text(
                       'Close',
@@ -478,9 +519,9 @@ Future.delayed(Duration(seconds: 3), () {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 240, 240, 240),
+      backgroundColor: Color(0xFFf1f4f8),
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 240, 240, 240),
+        backgroundColor: Color(0xFFf1f4f8),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
@@ -504,8 +545,7 @@ Future.delayed(Duration(seconds: 3), () {
                 child: Text(
                   'Add Physical Activity',
                   style: TextStyle(
-                   
-                    fontSize: 30, 
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -545,8 +585,6 @@ Future.delayed(Duration(seconds: 3), () {
                                 fillColor: Colors.white,
                                 contentPadding:
                                     EdgeInsets.fromLTRB(0, 16, 16, 8),
-                            
-                                                 
                               ),
                               style: TextStyle(
                                 fontSize: 25,
@@ -603,7 +641,6 @@ Future.delayed(Duration(seconds: 3), () {
                             child: Container(
                               alignment: Alignment.centerLeft,
                               child: Column(
-                               
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Wrap(
@@ -618,11 +655,14 @@ Future.delayed(Duration(seconds: 3), () {
                                           borderRadius:
                                               BorderRadius.circular(8.0),
                                           side: BorderSide(
-                                              color: (_selectedIntensity == "" && _errorMessage != null) 
-                                                  ? Theme.of(context).colorScheme.error 
-                                                  : Color(0xFF023B95),  
-                                              width: 1.0,
-                                            ),
+                                            color: (_selectedIntensity == "" &&
+                                                    _errorMessage != null)
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Color(0xFF023B95),
+                                            width: 1.0,
+                                          ),
                                         ),
                                         onSelected: (bool selected) {
                                           setState(() {
@@ -639,12 +679,15 @@ Future.delayed(Duration(seconds: 3), () {
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8.0),
-                                           side: BorderSide(
-                                              color: (_selectedIntensity == "" && _errorMessage != null) 
-                                                  ? Theme.of(context).colorScheme.error 
-                                                  : Color(0xFF023B95), 
-                                              width: 1.0,
-                                            ),
+                                          side: BorderSide(
+                                            color: (_selectedIntensity == "" &&
+                                                    _errorMessage != null)
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Color(0xFF023B95),
+                                            width: 1.0,
+                                          ),
                                         ),
                                         onSelected: (bool selected) {
                                           setState(() {
@@ -661,11 +704,14 @@ Future.delayed(Duration(seconds: 3), () {
                                           borderRadius:
                                               BorderRadius.circular(8.0),
                                           side: BorderSide(
-                                              color: (_selectedIntensity == "" && _errorMessage != null) 
-                                                  ? Theme.of(context).colorScheme.error 
-                                                  : Color(0xFF023B95),  
-                                              width: 1.0,
-                                            ),
+                                            color: (_selectedIntensity == "" &&
+                                                    _errorMessage != null)
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Color(0xFF023B95),
+                                            width: 1.0,
+                                          ),
                                         ),
                                         onSelected: (bool selected) {
                                           setState(() {
@@ -747,7 +793,6 @@ Future.delayed(Duration(seconds: 3), () {
                                         return 'Please enter a whole number';
                                       }
 
-                                      
                                       int minutes = int.parse(value);
 
                                       if (minutes < 1) {
@@ -761,8 +806,7 @@ Future.delayed(Duration(seconds: 3), () {
                                 ),
                                 SizedBox(width: 8),
                                 Padding(
-                                  padding: EdgeInsets.fromLTRB(0, 5, 0,
-                                      0), 
+                                  padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
                                   child: Text(
                                     'minute',
                                     style: TextStyle(
@@ -851,8 +895,7 @@ Future.delayed(Duration(seconds: 3), () {
                     ),
 
                     Padding(
-                      padding:
-                          EdgeInsets.fromLTRB(0, 50, 0, 0),
+                      padding: EdgeInsets.fromLTRB(0, 50, 0, 0),
                       child: Row(
                         children: [
                           Expanded(

@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter Attach",
+            "request": "attach",
+            "type": "dart",
+
+        },
+        {
+            "name": "InsulinSync",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "InsulinSync (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "InsulinSync (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}
