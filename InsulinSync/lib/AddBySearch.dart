@@ -1436,87 +1436,13 @@ Widget _buildIcon(IconData icon,
   );
 }
 
-// Future<void> searchFood(String searchExpression) async {
-//   final String consumerKey = "e8d5986b473d4d5f9403c45089673295";
-//   final String consumerSecret = "f6f68754b37947149440701c6f4a18a5";
-
-//   // Step 1: Generate timestamp and nonce
-//   // final oauthTimestamp =
-//   //     (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
-//   DateTime now = DateTime.now();
-//   print("response: Current Time: $now");
-
-//   DateTime adjustedTime = now.add(Duration(days: 1, hours: 12, minutes: 2));
-//   print("response: Adjusted Time: $adjustedTime");
-
-//   final oauthTimestamp =
-//       (adjustedTime.millisecondsSinceEpoch ~/ 1000).toString();
-//   print("response: oauthTimestamp: $oauthTimestamp");
-
-//   final oauthNonce =
-//       base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256)))
-//           .replaceAll('=', '');
-
-//   print('response food');
-
-//   // Step 2: Prepare the parameters
-//   final parameters = {
-//     'oauth_consumer_key': consumerKey,
-//     'oauth_signature_method': 'HMAC-SHA1',
-//     'oauth_timestamp': oauthTimestamp,
-//     'oauth_nonce': oauthNonce,
-//     'oauth_version': '1.0',
-//     'method': 'foods.search',
-//     'search_expression': searchExpression,
-//     'format': 'json',
-//   };
-
-//   // Step 3: Normalize the parameters and create the signature base string
-//   final normalizedParams = parameters.entries
-//       .map((e) =>
-//           '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
-//       .toList()
-//     ..sort();
-//   final paramString = normalizedParams.join('&');
-
-//   final httpMethod = 'GET';
-//   final baseUrl = 'https://platform.fatsecret.com/rest/server.api';
-//   final signatureBaseString =
-//       '$httpMethod&${Uri.encodeQueryComponent(baseUrl)}&${Uri.encodeQueryComponent(paramString)}';
-
-//   // Step 4: Create the signing key
-//   final signingKey = '${Uri.encodeQueryComponent(consumerSecret)}&';
-
-//   // Step 5: Generate the HMAC-SHA1 signature
-//   final hmacSha1 = Hmac(sha1, utf8.encode(signingKey));
-//   final digest = hmacSha1.convert(utf8.encode(signatureBaseString));
-//   final signature = base64Encode(digest.bytes);
-//   final encodedSignature = Uri.encodeQueryComponent(signature);
-
-//   // Step 6: Construct the full URL with parameters
-//   final requestUrl = '$baseUrl?$paramString&oauth_signature=$encodedSignature';
-
-//   // Step 7: Make the GET request
-//   final response = await http.get(Uri.parse(requestUrl));
-
-//   if (response.statusCode == 200) {
-//     print('Response: ${response.body}');
-//   } else {
-//     print('Error: ${response.statusCode} ${response.reasonPhrase}');
-//   }
-// }
-
 Future<List<foodItem>> searchFood1(String query) async {
-  final String consumerKey = "aea061ecb6004d61903e1387e7743e86";
-  final String consumerSecret = "41e586bd5c4b415c918f240f126b0c0e";
+  final String consumerKey = "e8d5986b473d4d5f9403c45089673295";
+  final String consumerSecret = "f6f68754b37947149440701c6f4a18a5";
   query = query.trim();
 
-  final oauthTimestamp = (DateTime.now()
-              .add(Duration(hours: 0, minutes: 2)) // Add 3 hours
-              .millisecondsSinceEpoch ~/
-          1000)
-      .toString();
-
+  final oauthTimestamp =
+      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
   final oauthNonce =
       base64UrlEncode(List<int>.generate(32, (i) => Random().nextInt(256)))
           .replaceAll('=', '');

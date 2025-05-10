@@ -716,9 +716,7 @@ class _AddByImage extends State<AddByImage> {
                                 if (value != null) {
                                   // parse the value to a double for validation
                                   final portion = double.tryParse(value);
-                                  if (portion == null || portion <= 0) {
-                                    return 'Please enter a number greater than 0';
-                                  }
+
                                   if (RegExp(r'^\d+\.?\d{0,2}$')
                                           .hasMatch(value) ==
                                       false) {
@@ -812,9 +810,7 @@ class _AddByImage extends State<AddByImage> {
                                 if (value != null) {
                                   // parse the value to a double for validation
                                   final portion = double.tryParse(value);
-                                  if (portion == null || portion <= 0) {
-                                    return 'Please enter a number greater than 0';
-                                  }
+
                                   if (RegExp(r'^\d+\.?\d{0,2}$')
                                           .hasMatch(value) ==
                                       false) {
@@ -904,9 +900,7 @@ class _AddByImage extends State<AddByImage> {
                                 if (value != null) {
                                   // parse the value to a double for validation
                                   final portion = double.tryParse(value);
-                                  if (portion == null || portion <= 0) {
-                                    return 'Please enter a number greater than 0';
-                                  }
+
                                   if (RegExp(r'^\d+\.?\d{0,2}$')
                                           .hasMatch(value) ==
                                       false) {
