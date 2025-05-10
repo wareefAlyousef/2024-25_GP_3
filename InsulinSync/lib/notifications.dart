@@ -50,9 +50,9 @@ class _notificationsWidgetState extends State<notifications> {
 
       // Get attributes with fallback to default values
       int min =
-          await userService.getUserAttribute('minRange') ?? 77; // Default value
+          await userService.getUserAttribute('minRange') ?? 70; // Default value
       int max =
-          await userService.getUserAttribute('maxRange') ?? 78; // Default value
+          await userService.getUserAttribute('maxRange') ?? 180; // Default value
 
       // Handle notifications setting
       bool notifications =
