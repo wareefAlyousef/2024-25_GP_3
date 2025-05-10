@@ -79,7 +79,7 @@ class _NutritionStackedBarChartState extends State<NutritionStackedBarChart> {
             .toSet();
 
         oldestDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
-        newestDate = dates.reduce((a, b) => a.isAfter(b) ? a : b);
+        newestDate = DateTime.now();
 
         // Ensure minimum 30-day range
         final dataRangeDays = newestDate.difference(oldestDate).inDays + 1;
